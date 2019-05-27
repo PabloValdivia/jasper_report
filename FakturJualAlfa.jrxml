@@ -27,7 +27,7 @@ INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
 INNER JOIN m_product p ON il.m_product_id = p.m_product_id
 INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE io.m_inout_id = $P{RECORD_ID}]]>
+WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
@@ -66,30 +66,30 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 		<band height="25" splitType="Stretch"/>
 	</title>
 	<pageHeader>
-		<band height="74" splitType="Stretch">
+		<band height="71" splitType="Stretch">
 			<textField isBlankWhenNull="true">
-				<reportElement x="51" y="42" width="150" height="10" uuid="83f8db18-6993-4989-92de-eb433d0226c7"/>
+				<reportElement x="54" y="42" width="150" height="10" uuid="83f8db18-6993-4989-92de-eb433d0226c7"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?" "+$F{bp_address}:""]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="51" y="33" width="150" height="10" uuid="5c5d3715-2ef3-4699-b65e-2da96aaf8a7e"/>
+				<reportElement x="54" y="33" width="150" height="10" uuid="5c5d3715-2ef3-4699-b65e-2da96aaf8a7e"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?" "+$F{bp_name}:""]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="51" y="61" width="150" height="10" uuid="7b2fd7ef-bcaa-4903-8447-3fee068a8f2b"/>
+				<reportElement x="54" y="61" width="150" height="10" uuid="7b2fd7ef-bcaa-4903-8447-3fee068a8f2b"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="51" y="51" width="150" height="10" uuid="89c1ebf2-e032-4769-b10e-86f6c8a85e8d"/>
+				<reportElement x="54" y="51" width="150" height="10" uuid="89c1ebf2-e032-4769-b10e-86f6c8a85e8d"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
@@ -201,35 +201,35 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="5" y="24" width="196" height="10" uuid="5a38ff7f-9f1e-46ff-be62-7fd9058bdea2"/>
+				<reportElement x="8" y="24" width="196" height="10" uuid="5a38ff7f-9f1e-46ff-be62-7fd9058bdea2"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"TOKO/PERUSAHAAN ":""]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="6" y="34" width="35" height="10" uuid="c088ad54-b4b6-4392-b666-857755d8d146"/>
+				<reportElement x="9" y="34" width="35" height="10" uuid="c088ad54-b4b6-4392-b666-857755d8d146"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"NAMA ":""]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="6" y="43" width="35" height="10" uuid="91b59391-e1d3-48ba-9da8-969c517222c3"/>
+				<reportElement x="9" y="43" width="35" height="10" uuid="91b59391-e1d3-48ba-9da8-969c517222c3"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"ALAMAT ":""]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="6" y="52" width="35" height="10" uuid="fd0dd5f3-0d9e-4a95-8e29-56967b697059"/>
+				<reportElement x="9" y="52" width="35" height="10" uuid="fd0dd5f3-0d9e-4a95-8e29-56967b697059"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"KOTA ":""]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="6" y="61" width="35" height="10" uuid="d4a8391b-3bd0-4026-853c-41a0248cff57"/>
+				<reportElement x="9" y="61" width="35" height="10" uuid="d4a8391b-3bd0-4026-853c-41a0248cff57"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
@@ -242,15 +242,43 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{rayon}]]></textFieldExpression>
 			</textField>
+			<textField>
+				<reportElement x="44" y="61" width="10" height="10" uuid="700e4d80-4522-4e69-b27c-919628d09ea4"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?":":""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="44" y="43" width="10" height="10" uuid="27ec7fe7-789e-4b8d-b584-48c0551f81cb"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?":":""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="44" y="34" width="10" height="10" uuid="94f7bd61-e6ef-4acd-991d-abb9aecd4647"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?":":""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="44" y="52" width="10" height="10" uuid="77d81580-b8d9-42c0-8213-bc5f70947ab4"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?":":""]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
 		<band height="27" splitType="Stretch"/>
 	</columnHeader>
 	<detail>
-		<band height="13" splitType="Stretch">
+		<band height="11" splitType="Stretch">
 			<textField>
-				<reportElement x="123" y="1" width="145" height="10" uuid="c047bd52-3164-4e78-9027-eec062face57"/>
+				<reportElement x="123" y="1" width="159" height="10" uuid="c047bd52-3164-4e78-9027-eec062face57"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
@@ -282,35 +310,35 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{qty}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="267" y="1" width="84" height="10" uuid="e2c5ebad-1593-48a3-b37e-dc48c0b52fb2"/>
+				<reportElement x="292" y="1" width="84" height="10" uuid="e2c5ebad-1593-48a3-b37e-dc48c0b52fb2"/>
 				<textElement textAlignment="Right">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{harga_satuan}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="351" y="1" width="40" height="10" uuid="77c618a6-d5de-4efe-9e0d-ce48f9c24c0e"/>
+				<reportElement x="375" y="1" width="40" height="10" uuid="77c618a6-d5de-4efe-9e0d-ce48f9c24c0e"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{rwd_disc}>0?""+$F{rwd_disc}+"+":""]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="390" y="1" width="40" height="10" uuid="0a995e56-d341-49ac-9737-d78a7d6ab227"/>
+				<reportElement x="414" y="1" width="40" height="10" uuid="0a995e56-d341-49ac-9737-d78a7d6ab227"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{add_disc}>0?""+$F{add_disc}+"+":""]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0 %">
-				<reportElement x="429" y="1" width="40" height="10" uuid="fa9cd0e8-883c-4eee-87c9-f2c494cce7ff"/>
+				<reportElement x="453" y="1" width="40" height="10" uuid="fa9cd0e8-883c-4eee-87c9-f2c494cce7ff"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{reg_disc}>0?""+$F{reg_disc}+"%":""]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="469" y="1" width="109" height="10" uuid="1905801d-d0ac-47c5-859d-0c4d06f18913"/>
+				<reportElement x="497" y="1" width="81" height="10" uuid="1905801d-d0ac-47c5-859d-0c4d06f18913"/>
 				<textElement textAlignment="Right">
 					<font fontName="Arial" size="8"/>
 				</textElement>
@@ -319,32 +347,51 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="45" splitType="Stretch">
+		<band height="39" splitType="Stretch">
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="53" y="4" width="102" height="10" uuid="429929f8-0119-4875-a62f-8f293d8a4d8d"/>
+				<reportElement x="53" y="1" width="102" height="10" uuid="429929f8-0119-4875-a62f-8f293d8a4d8d"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="457" y="4" width="121" height="13" uuid="8ee1714c-7d59-44bc-9027-1d02fd8e2bb3"/>
+				<reportElement x="457" y="1" width="121" height="13" uuid="8ee1714c-7d59-44bc-9027-1d02fd8e2bb3"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="457" y="27" width="121" height="13" uuid="fcc23ac5-6736-4ec9-8e36-f3fa70bfabdd"/>
+				<reportElement x="457" y="26" width="121" height="13" uuid="fcc23ac5-6736-4ec9-8e36-f3fa70bfabdd"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
 			</textField>
+			<staticText>
+				<reportElement x="172" y="1" width="60" height="13" uuid="17ae1b6d-4c45-4f49-abdd-e2905453454d"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[TERBILANG : ]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="232" y="1" width="195" height="28" uuid="b85788e3-a431-4072-b9e2-52060db54e84"/>
+				<box leftPadding="0">
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords($V{harga_jual_1}.toString())]]></textFieldExpression>
+			</textField>
 		</band>
 	</columnFooter>
 	<pageFooter>
-		<band height="17" splitType="Stretch"/>
+		<band height="16" splitType="Stretch"/>
 	</pageFooter>
 	<summary>
 		<band height="17" splitType="Stretch"/>

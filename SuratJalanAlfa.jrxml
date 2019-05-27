@@ -318,9 +318,9 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 		</band>
 	</columnFooter>
 	<pageFooter>
-		<band height="15" splitType="Immediate"/>
+		<band height="18" splitType="Immediate"/>
 	</pageFooter>
 	<summary>
-		<band height="15" splitType="Immediate"/>
+		<band height="16" splitType="Immediate"/>
 	</summary>
 </jasperReport>
