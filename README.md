@@ -7,5 +7,7 @@ Report tersebut antara lain:
 - Invoice
 - Invoice Cabang
 - Rencana Kirim
+- Billing List
+- dll
 
 Please, Feel Free to fork it
