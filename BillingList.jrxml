@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="BillingList" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="390f5420-f074-4670-9302-70b1b57591a8">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="BillingList" language="groovy" pageWidth="611" pageHeight="793" columnWidth="571" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="390f5420-f074-4670-9302-70b1b57591a8">
 	<property name="ireport.zoom" value="1.5"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -196,7 +196,7 @@ WHERE bl.tdi_billinglist_id=$P{RECORD_ID}]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font size="11" isBold="true"/>
 				</textElement>
-				<text><![CDATA[Open Amount]]></text>
+				<text><![CDATA[Open Amount (Rp.)]]></text>
 			</staticText>
 		</band>
 	</columnHeader>
@@ -299,7 +299,7 @@ WHERE bl.tdi_billinglist_id=$P{RECORD_ID}]]>
 			<textField pattern="#,##0.00">
 				<reportElement x="447" y="0" width="108" height="20" uuid="c0ed3d07-8f50-489e-8b68-3752fa35e92f"/>
 				<box rightPadding="5"/>
-				<textElement textAlignment="Right">
+				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font size="10" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{total_amount}]]></textFieldExpression>
@@ -307,7 +307,7 @@ WHERE bl.tdi_billinglist_id=$P{RECORD_ID}]]>
 			<staticText>
 				<reportElement x="201" y="0" width="100" height="20" uuid="ee67a6b6-76cd-47b0-bfb0-746b57fd5a91"/>
 				<box leftPadding="5"/>
-				<textElement>
+				<textElement verticalAlignment="Middle">
 					<font isBold="true"/>
 				</textElement>
 				<text><![CDATA[Total Amount]]></text>
