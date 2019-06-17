@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="253"/>
+	<property name="ireport.y" value="123"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
@@ -14,7 +14,10 @@
 	   bpl.name as locationname, uo.name as uomname, p.name as productname, uc.dividerate as qty,
 	   il.pricelist as harga_satuan,
 	   il.rewarddiscount as rwd_disc, il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
-	   il.priceactual as harga_jual
+	   il.priceactual as harga_jual,
+	  (SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
+	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) * (p.weight * uc.dividerate * il.qtyinvoiced)) as tonase,
+	  (i.dateinvoiced+pt.netdays) as duedate
 FROM m_inout io
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
 INNER JOIN c_invoice i ON o.c_order_id = i.c_order_id
@@ -27,6 +30,7 @@ INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
 INNER JOIN m_product p ON il.m_product_id = p.m_product_id
 INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
 WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
@@ -56,6 +60,9 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 	<field name="add_disc" class="java.math.BigDecimal"/>
 	<field name="reg_disc" class="java.math.BigDecimal"/>
 	<field name="harga_jual" class="java.math.BigDecimal"/>
+	<field name="koli" class="java.math.BigDecimal"/>
+	<field name="tonase" class="java.math.BigDecimal"/>
+	<field name="duedate" class="java.sql.Date"/>
 	<variable name="harga_jual_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{harga_jual}]]></variableExpression>
 	</variable>
@@ -251,6 +258,13 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 PO.BOX 1002 Surabaya, Telp.031-8662350 (Hunting), Fax.031-8672804
 N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]></text>
 			</staticText>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="439" y="116" width="100" height="11" uuid="d6970ec6-df0e-497a-bd27-ad2bb6232f4a"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{duedate}]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
@@ -334,7 +348,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 		<band height="243" splitType="Stretch">
 			<textField pattern="dd/MM/yyyy">
 				<reportElement x="479" y="90" width="100" height="15" uuid="133eb7ac-3840-4813-9a3d-a6388fcae486"/>
-				<textElement>
+				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
@@ -352,6 +366,46 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="204" y="42" width="56" height="10" uuid="824dfe3f-d5dc-4afa-9ac0-df10481802be"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[KOLI/TONASE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="271" y="42" width="10" height="10" uuid="b9e2b8ad-60a3-41d4-8a95-a4c549f52305"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[/]]></text>
+			</staticText>
+			<textField pattern="#,##0">
+				<reportElement x="281" y="42" width="21" height="10" uuid="53bbd142-416e-49cd-81b1-2f4770139a65"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
+			</textField>
+			<textField pattern="###0">
+				<reportElement x="260" y="42" width="12" height="10" uuid="aa7129b0-46ed-4f43-946e-7cdee9fa95fc"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="68" y="66" width="349" height="28" uuid="af43a4d9-2b7f-467d-ada6-a9fc2ee63343"/>
+				<box leftPadding="0">
+					<topPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords($V{harga_jual_1}.toString())]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>
