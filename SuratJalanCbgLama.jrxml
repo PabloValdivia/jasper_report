@@ -2,19 +2,26 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="60"/>
+	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<queryString>
 		<![CDATA[SELECT row_number() over() as row_no,
 	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, o.dateordered, o.poreference, sr.name as rayon,
-       bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
-	   bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
-	   bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, p.description as productname,
-	   (SELECT COUNT(c_orderline_id) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) as koli,
-	   ((SELECT COUNT(c_orderline_id) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) * (p.weight * uc.dividerate * iol.qtyentered)) as tonase,
-(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2
+    bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
+	bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
+	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, p.description as productname,
+	(SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) as koli,
+	((SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) *
+	 (p.weight *
+	  case
+	  	when iol.c_uom_id = p.c_uom_id then 1
+	    else uc.dividerate
+	  end
+	  )
+	 ) as tonase,
+	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2
 FROM m_inout io
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
@@ -51,7 +58,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 	<field name="descinoutline" class="java.lang.String"/>
 	<field name="uomname" class="java.lang.String"/>
 	<field name="productname" class="java.lang.String"/>
-	<field name="koli" class="java.lang.Long"/>
+	<field name="koli" class="java.math.BigDecimal"/>
 	<field name="tonase" class="java.math.BigDecimal"/>
 	<field name="uomname2" class="java.lang.String"/>
 	<background>
@@ -267,7 +274,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{uomname2}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{uomname}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="119" y="2" width="254" height="10" uuid="020ad8d4-6966-40f9-a381-a54e720fe3e5"/>
@@ -299,7 +306,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<text><![CDATA[/]]></text>
 			</staticText>
-			<textField>
+			<textField pattern="###0">
 				<reportElement x="307" y="7" width="12" height="10" uuid="e06d893f-c28c-4d5b-a1f9-a6f117026237"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
@@ -313,7 +320,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<text><![CDATA[KOLI/TONASE]]></text>
 			</staticText>
-			<textField pattern="#,##0">
+			<textField pattern="#,##0.00">
 				<reportElement x="328" y="7" width="21" height="10" uuid="bc155e3d-3033-4e9c-9ac0-6777aed655f5"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>

@@ -2,21 +2,27 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="123"/>
+	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<queryString>
 		<![CDATA[SELECT row_number() over() as row_no,
-	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, o.dateordered, o.poreference, sr.name as rayon,
+	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon,
        bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
 	   bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
-	   bpl.name as locationname, uo.name as uomname, p.name as productname, uc.dividerate as qty,
+	   bpl.name as locationname, uo.name as uomname, p.name as productname, il.qtyentered as qty,
 	   il.pricelist as harga_satuan,
 	   il.rewarddiscount as rwd_disc, il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
 	   il.priceactual as harga_jual,
 	  (SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
-	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) * (p.weight * uc.dividerate * il.qtyinvoiced)) as tonase,
+	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) *
+	    (p.weight *
+		 case
+			when il.c_uom_id = p.c_uom_id then 1
+			else uc.dividerate
+		 end * il.qtyinvoiced)
+	   ) as tonase,
 	  (i.dateinvoiced+pt.netdays) as duedate
 FROM m_inout io
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
@@ -38,8 +44,8 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 	<field name="ad_org_id" class="java.math.BigDecimal"/>
 	<field name="documentno" class="java.lang.String"/>
 	<field name="description" class="java.lang.String"/>
-	<field name="movementdate" class="java.sql.Timestamp"/>
-	<field name="doc_corder" class="java.lang.String"/>
+	<field name="dateinvoiced" class="java.sql.Timestamp"/>
+	<field name="no_order" class="java.lang.String"/>
 	<field name="dateordered" class="java.sql.Timestamp"/>
 	<field name="poreference" class="java.lang.String"/>
 	<field name="rayon" class="java.lang.String"/>
@@ -233,14 +239,14 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{doc_corder}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{no_order}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
 				<reportElement x="439" y="23" width="102" height="10" uuid="18682a9c-ed5d-41ca-992d-79115927763b"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{dateinvoiced}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement x="54" y="85" width="150" height="10" uuid="13e00687-e730-409e-ab3e-60ce20ebca32"/>
@@ -281,7 +287,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="64" y="2" width="65" height="10" uuid="8adc98fa-5611-42ae-adf0-3089d3232899"/>
+				<reportElement x="62" y="2" width="65" height="10" uuid="8adc98fa-5611-42ae-adf0-3089d3232899"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
@@ -396,7 +402,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="68" y="66" width="349" height="28" uuid="af43a4d9-2b7f-467d-ada6-a9fc2ee63343"/>
+				<reportElement x="68" y="66" width="349" height="28" uuid="86220f3c-2778-43de-883f-bec6d3f305f5"/>
 				<box leftPadding="0">
 					<topPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.0"/>
