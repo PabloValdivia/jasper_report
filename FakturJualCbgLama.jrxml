@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="0"/>
+	<property name="ireport.y" value="127"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
@@ -15,13 +15,18 @@
 	   il.pricelist as harga_satuan,
 	   il.rewarddiscount as rwd_disc, il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
 	   il.priceactual as harga_jual,
-	  (SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
+	  (SELECT SUM(qtyentered /
+		case
+			when (il.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
+			else 1
+		 end
+		) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
 	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) *
-	    (p.weight *
+	    (il.weight *
 		 case
 			when il.c_uom_id = p.c_uom_id then 1
 			else uc.dividerate
-		 end * il.qtyinvoiced)
+		 end)
 	   ) as tonase,
 	  (i.dateinvoiced+pt.netdays) as duedate
 FROM m_inout io
@@ -387,8 +392,8 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<text><![CDATA[/]]></text>
 			</staticText>
-			<textField pattern="#,##0">
-				<reportElement x="281" y="42" width="21" height="10" uuid="53bbd142-416e-49cd-81b1-2f4770139a65"/>
+			<textField pattern="#,##0.00">
+				<reportElement x="281" y="42" width="31" height="10" uuid="53bbd142-416e-49cd-81b1-2f4770139a65"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
@@ -402,7 +407,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="68" y="66" width="349" height="28" uuid="86220f3c-2778-43de-883f-bec6d3f305f5"/>
+				<reportElement x="68" y="67" width="349" height="28" uuid="86220f3c-2778-43de-883f-bec6d3f305f5"/>
 				<box leftPadding="0">
 					<topPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.0"/>
@@ -411,7 +416,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textElement verticalAlignment="Top">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords($V{harga_jual_1}.toString())]]></textFieldExpression>
+				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords($V{harga_jual_1}.toString())+" Rupiah"]]></textFieldExpression>
 			</textField>
 		</band>
 	</pageFooter>

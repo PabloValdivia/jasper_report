@@ -5,7 +5,7 @@
 	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer"/>
 	<queryString>
-		<![CDATA[SELECT row_number() over() as row_no,
+		<![CDATA[SELECT row_number() over() as row_no, uc.dividerate, il.c_uom_id as trn_uom, p.c_uom_id as mst_uom, il.qtyentered,
 	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon,
        bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
 	   bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
@@ -13,14 +13,15 @@
 	   il.pricelist as harga_satuan,
 	   il.rewarddiscount as rwd_disc, il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
 	   il.priceactual as harga_jual,
-	  (SELECT SUM(qtyentered /
+	  (SELECT SUM(
+		qtyentered /
 		case
-			when il.c_uom_id = p.c_uom_id then 1
-			else uc.dividerate
+			when (il.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
+			else 1
 		 end
 		) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
 	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) *
-	    (il.weight *
+	    (p.weight *
 		 case
 			when il.c_uom_id = p.c_uom_id then 1
 			else uc.dividerate
@@ -44,6 +45,10 @@ INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
 WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
+	<field name="dividerate" class="java.math.BigDecimal"/>
+	<field name="trn_uom" class="java.math.BigDecimal"/>
+	<field name="mst_uom" class="java.math.BigDecimal"/>
+	<field name="qtyentered" class="java.math.BigDecimal"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
 	<field name="ad_org_id" class="java.math.BigDecimal"/>
 	<field name="documentno" class="java.lang.String"/>
@@ -478,7 +483,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 			</textField>
 			<textField pattern="#,##0.00">
 				<reportElement x="465" y="0" width="112" height="10" uuid="324f1978-42ad-4817-9a27-2403ecbedcef"/>
-				<box rightPadding="12">
+				<box rightPadding="5">
 					<leftPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.75"/>
 					<rightPen lineWidth="0.75"/>
@@ -503,46 +508,40 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 		</band>
 	</detail>
 	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
 		<band height="129" splitType="Stretch">
 			<textField pattern="#,##0.00">
-				<reportElement x="83" y="5" width="21" height="10" uuid="52d924c4-8e8c-4104-81ff-23103a577215"/>
+				<reportElement x="80" y="4" width="21" height="10" uuid="52d924c4-8e8c-4104-81ff-23103a577215"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="6" y="5" width="56" height="10" uuid="ba57e7e5-740f-4697-b3a4-0271560374b7"/>
+				<reportElement x="3" y="4" width="56" height="10" uuid="ba57e7e5-740f-4697-b3a4-0271560374b7"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[KOLI/TONASE]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="73" y="5" width="10" height="10" uuid="5d640f34-ea63-4a2e-9438-9ad9164e7991"/>
+				<reportElement x="70" y="4" width="10" height="10" uuid="5d640f34-ea63-4a2e-9438-9ad9164e7991"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[/]]></text>
 			</staticText>
 			<textField pattern="###0">
-				<reportElement x="62" y="5" width="12" height="10" uuid="8f38688c-8b3e-4e55-8986-642b453c5734"/>
+				<reportElement x="59" y="4" width="12" height="10" uuid="8f38688c-8b3e-4e55-8986-642b453c5734"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="0" y="0" width="577" height="129" uuid="4937bfa1-de23-434e-944a-1b8aa96dec45"/>
-				<box>
-					<leftPen lineWidth="0.75"/>
-					<bottomPen lineWidth="0.75"/>
-					<rightPen lineWidth="0.75"/>
-				</box>
-				<text><![CDATA[]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="9" y="27" width="243" height="91" uuid="085ae101-8fc9-4869-9696-ab9be863c0a7"/>
+				<reportElement x="6" y="26" width="243" height="91" uuid="085ae101-8fc9-4869-9696-ab9be863c0a7"/>
 				<box topPadding="0" leftPadding="0">
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -552,83 +551,83 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="14" y="31" width="100" height="15" uuid="bca56c21-a66c-4b3e-a4e7-f8c500a8d85e"/>
+				<reportElement x="11" y="30" width="100" height="15" uuid="bca56c21-a66c-4b3e-a4e7-f8c500a8d85e"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Catatan :]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="27" y="46" width="223" height="30" uuid="7f608549-8143-40f9-ba9f-a85c3941aae3"/>
+				<reportElement x="24" y="45" width="223" height="30" uuid="7f608549-8143-40f9-ba9f-a85c3941aae3"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Proforma adalah lampiran pemberitahuan harga jual, belum termasuk promo  dll.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="14" y="46" width="14" height="16" uuid="1777315d-9992-463d-b8b8-f08ee202c9e3"/>
+				<reportElement x="11" y="45" width="14" height="16" uuid="1777315d-9992-463d-b8b8-f08ee202c9e3"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[1.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="27" y="76" width="223" height="16" uuid="f314f956-c0c5-4c9e-b510-a190318d987a"/>
+				<reportElement x="24" y="75" width="223" height="16" uuid="f314f956-c0c5-4c9e-b510-a190318d987a"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Proforma TIDAK dapat digunakan untuk PENAGIHAN.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="14" y="76" width="14" height="16" uuid="3e388049-bd2d-4096-af31-1850070cde08"/>
+				<reportElement x="11" y="75" width="14" height="16" uuid="3e388049-bd2d-4096-af31-1850070cde08"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[2.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="27" y="92" width="223" height="16" uuid="05c2d896-32fb-4b7f-917f-c7fb1969b152"/>
+				<reportElement x="24" y="91" width="223" height="16" uuid="05c2d896-32fb-4b7f-917f-c7fb1969b152"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Penagihan HARUS dengan faktur penjualan & surat jalan asli.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="14" y="92" width="14" height="16" uuid="e8ff9283-6337-4581-bdc6-5c0063c6314b"/>
+				<reportElement x="11" y="91" width="14" height="16" uuid="e8ff9283-6337-4581-bdc6-5c0063c6314b"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[3.]]></text>
 			</staticText>
 			<textField pattern="dd/MM/yyyy">
-				<reportElement x="328" y="31" width="83" height="15" uuid="4d551bc6-2109-4fd2-a15a-948371fcb7e3"/>
+				<reportElement x="325" y="30" width="83" height="15" uuid="4d551bc6-2109-4fd2-a15a-948371fcb7e3"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="296" y="31" width="36" height="15" uuid="e53b0956-3c98-4f94-bb80-28093875362e"/>
+				<reportElement x="293" y="30" width="36" height="15" uuid="e53b0956-3c98-4f94-bb80-28093875362e"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Madiun, ]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="280" y="98" width="132" height="20" uuid="0975696e-ffde-46a1-a408-dd6a9a9ffcf2"/>
+				<reportElement x="277" y="97" width="132" height="20" uuid="0975696e-ffde-46a1-a408-dd6a9a9ffcf2"/>
 				<textElement textAlignment="Center" verticalAlignment="Bottom"/>
 				<text><![CDATA[( -------------------------------- )]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="384" y="4" width="80" height="15" uuid="8b1f2455-b42c-40dd-854c-949cdd7d8cc9"/>
+				<reportElement x="381" y="3" width="80" height="15" uuid="8b1f2455-b42c-40dd-854c-949cdd7d8cc9"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Jumlah Penjualan Rp.]]></text>
 			</staticText>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="1" width="112" height="35" uuid="4aedb785-6161-4878-a6a5-f9b8c83c6675"/>
-				<box topPadding="5" rightPadding="12">
+				<reportElement x="465" y="0" width="112" height="35" uuid="4aedb785-6161-4878-a6a5-f9b8c83c6675"/>
+				<box topPadding="5" rightPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
 					<rightPen lineWidth="0.75"/>
@@ -639,8 +638,8 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$V{hrg_jual_proforma_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="36" width="112" height="26" uuid="116264ea-9568-4c86-bfea-f46d6579d8b5"/>
-				<box topPadding="5" rightPadding="12">
+				<reportElement x="465" y="35" width="112" height="26" uuid="116264ea-9568-4c86-bfea-f46d6579d8b5"/>
+				<box topPadding="5" rightPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
 					<rightPen lineWidth="0.75"/>
@@ -651,16 +650,23 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$V{hrg_jual_proforma_1}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="428" y="38" width="36" height="15" uuid="7c877042-32c9-4f81-8d79-15ea5954b8ba"/>
+				<reportElement x="425" y="37" width="36" height="15" uuid="7c877042-32c9-4f81-8d79-15ea5954b8ba"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[Netto Rp.]]></text>
 			</staticText>
+			<staticText>
+				<reportElement x="0" y="0" width="577" height="129" uuid="bdba7929-02b8-412f-9300-0b4e36cb8e08"/>
+				<box>
+					<topPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.75"/>
+					<bottomPen lineWidth="0.75"/>
+					<rightPen lineWidth="0.75"/>
+				</box>
+				<text><![CDATA[]]></text>
+			</staticText>
 		</band>
-	</columnFooter>
-	<pageFooter>
-		<band splitType="Stretch"/>
 	</pageFooter>
 	<summary>
 		<band splitType="Stretch"/>

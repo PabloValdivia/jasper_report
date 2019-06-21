@@ -16,8 +16,8 @@
 	((SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) *
 	 (p.weight *
 	  case
-	  	when iol.c_uom_id = p.c_uom_id then 1
-	    else uc.dividerate
+	  	when (iol.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
+		else 1
 	  end
 	  )
 	 ) as tonase,
