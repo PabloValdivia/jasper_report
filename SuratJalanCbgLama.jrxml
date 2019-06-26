@@ -12,12 +12,17 @@
     bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
 	bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
 	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, p.description as productname,
-	(SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) as koli,
+	(SELECT SUM(qtyentered /
+		case
+			when (iol.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
+			else 1
+		 end
+		) FROM c_orderline WHERE c_order_id=o.c_order_id) as koli,
 	((SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) *
 	 (p.weight *
 	  case
-	  	when (iol.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
-		else 1
+	  	when iol.c_uom_id = p.c_uom_id then 1
+		else uc.dividerate
 	  end
 	  )
 	 ) as tonase,

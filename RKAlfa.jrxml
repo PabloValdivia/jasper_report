@@ -24,7 +24,8 @@
 	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2,
 	ml.planqty as qty_order,
 	(SELECT name FROM c_uom WHERE c_uom_id=ml.c_uom_id) as uomname_order
-FROM m_inout io
+FROM m_movement mv
+INNER JOIN m_inout io ON io.m_inout_id = mv.m_inout_id
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
@@ -36,7 +37,7 @@ INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
 INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE io.m_inout_id = $P{RECORD_ID}]]>
+WHERE mv.m_movement_id = $P{RECORD_ID}]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
@@ -131,7 +132,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="210" y="38" width="73" height="20" uuid="f2422a8b-a10d-47d7-8b9f-c99833dc6281"/>
+				<reportElement x="210" y="38" width="190" height="20" uuid="f2422a8b-a10d-47d7-8b9f-c99833dc6281"/>
 				<textElement verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{bp_name}]]></textFieldExpression>
 			</textField>
