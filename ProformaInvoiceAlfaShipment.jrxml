@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ProformaInvoiceAlfa" language="groovy" pageWidth="617" pageHeight="396" columnWidth="577" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="e91f1c69-4edb-402b-a149-e8504a5cebfc">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ProformaInvoiceAlfa" language="groovy" pageWidth="617" pageHeight="395" columnWidth="577" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="e91f1c69-4edb-402b-a149-e8504a5cebfc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -108,7 +108,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<text><![CDATA[MADIUN - INDONESIA]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="346" y="0" width="231" height="97" uuid="a2dde977-fc6f-42d3-a311-6688b45688e4"/>
+				<reportElement x="346" y="0" width="230" height="97" uuid="a2dde977-fc6f-42d3-a311-6688b45688e4"/>
 				<box>
 					<topPen lineWidth="0.75"/>
 					<leftPen lineWidth="0.75"/>
@@ -264,7 +264,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<text><![CDATA[:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="507" y="56" width="67" height="27" uuid="3bc52d3d-5d8f-4e2d-8bb1-938a72cb1e6f"/>
+				<reportElement x="504" y="56" width="67" height="27" uuid="3bc52d3d-5d8f-4e2d-8bb1-938a72cb1e6f"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Dashed"/>
 					<leftPen lineWidth="0.5" lineStyle="Dashed"/>
@@ -406,7 +406,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Discount (%)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="465" y="0" width="112" height="15" uuid="64c5fdec-d8a9-4540-82f0-87b94deba111"/>
+				<reportElement x="465" y="0" width="111" height="15" uuid="64c5fdec-d8a9-4540-82f0-87b94deba111"/>
 				<box>
 					<topPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
@@ -482,7 +482,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{reg_disc}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="0" width="112" height="10" uuid="324f1978-42ad-4817-9a27-2403ecbedcef"/>
+				<reportElement x="465" y="0" width="111" height="10" uuid="324f1978-42ad-4817-9a27-2403ecbedcef"/>
 				<box rightPadding="5">
 					<leftPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.75"/>
@@ -508,7 +508,11 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 		</band>
 	</detail>
 	<columnFooter>
-		<band splitType="Stretch"/>
+		<band height="1" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="576" height="1" uuid="98e6bc80-a954-41bb-ad7c-82031e10ade4"/>
+			</rectangle>
+		</band>
 	</columnFooter>
 	<pageFooter>
 		<band height="129" splitType="Stretch">
@@ -626,7 +630,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Jumlah Penjualan Rp.]]></text>
 			</staticText>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="0" width="112" height="35" uuid="4aedb785-6161-4878-a6a5-f9b8c83c6675"/>
+				<reportElement x="465" y="0" width="111" height="35" uuid="4aedb785-6161-4878-a6a5-f9b8c83c6675"/>
 				<box topPadding="5" rightPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
@@ -638,7 +642,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$V{hrg_jual_proforma_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="35" width="112" height="26" uuid="116264ea-9568-4c86-bfea-f46d6579d8b5"/>
+				<reportElement x="465" y="35" width="111" height="26" uuid="116264ea-9568-4c86-bfea-f46d6579d8b5"/>
 				<box topPadding="5" rightPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
@@ -657,7 +661,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Netto Rp.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="0" y="0" width="577" height="129" uuid="bdba7929-02b8-412f-9300-0b4e36cb8e08"/>
+				<reportElement x="0" y="0" width="576" height="129" uuid="bdba7929-02b8-412f-9300-0b4e36cb8e08"/>
 				<box>
 					<topPen lineWidth="0.75"/>
 					<leftPen lineWidth="0.75"/>

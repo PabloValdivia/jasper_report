@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="0"/>
+	<property name="ireport.y" value="214"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
@@ -26,7 +26,7 @@
 	  end
 	  )
 	 ) as tonase,
-	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2
+	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2, bpl.name as sts_wp
 FROM m_inout io
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
@@ -38,7 +38,7 @@ INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
 INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE io.m_inout_id = $P{RECORD_ID}]]>
+WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y']]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
@@ -66,6 +66,7 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 	<field name="koli" class="java.math.BigDecimal"/>
 	<field name="tonase" class="java.math.BigDecimal"/>
 	<field name="uomname2" class="java.lang.String"/>
+	<field name="sts_wp" class="java.lang.String"/>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
@@ -74,20 +75,6 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 	</title>
 	<pageHeader>
 		<band height="164" splitType="Stretch">
-			<staticText>
-				<reportElement x="9" y="117" width="35" height="10" uuid="4e81e63a-cb5d-44df-b4e9-2d34d1f3370f"/>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[ALAMAT]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="43" y="117" width="12" height="10" uuid="5d1680d4-b0b7-4270-b812-8629cbdddae2"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[:]]></text>
-			</staticText>
 			<textField>
 				<reportElement x="559" y="4" width="32" height="13" uuid="35c9cf45-8f02-4852-a930-80a9f7a8630d"/>
 				<textElement>
@@ -95,27 +82,6 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{rayon}]]></textFieldExpression>
 			</textField>
-			<staticText>
-				<reportElement x="9" y="136" width="35" height="10" uuid="21e6e916-2ccd-40b0-b83a-5659f797b517"/>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[NPWP]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="43" y="108" width="12" height="10" uuid="824ad934-eab8-4625-a8f2-5af4341ba6ae"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[:]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="43" y="136" width="12" height="10" uuid="57005804-0356-416a-8e55-bbc159d06006"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[:]]></text>
-			</staticText>
 			<textField isBlankWhenNull="true">
 				<reportElement x="54" y="57" width="150" height="10" uuid="fd8b0779-a684-442d-8bcf-a9b19c33c235"/>
 				<textElement verticalAlignment="Middle">
@@ -145,20 +111,6 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"ALAMAT ":""]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="55" y="108" width="155" height="10" uuid="ca7bd5e8-c146-43da-adae-819133ad5360"/>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{bp_npwp_name}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="9" y="99" width="115" height="10" uuid="a45a012b-e407-4b29-91fb-a219a8397aa5"/>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[WAJIB PAJAK]]></text>
-			</staticText>
-			<textField isBlankWhenNull="true">
 				<reportElement x="439" y="92" width="102" height="10" uuid="466ce090-ab9d-4849-81c6-bd56a579e9d3"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
@@ -186,33 +138,12 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{dateordered}]]></textFieldExpression>
 			</textField>
-			<textField isBlankWhenNull="false">
-				<reportElement x="55" y="136" width="155" height="10" uuid="395b33db-8014-4a74-9b1e-8cf0070f0c0b"/>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{bp_npwp_id}? $F{bp_npwp_id}: '(NPWP tidak ada)']]></textFieldExpression>
-			</textField>
 			<textField>
 				<reportElement x="8" y="48" width="196" height="10" uuid="1b53370b-3cb2-4123-977b-dfd15d6af2e3"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"TOKO/PERUSAHAAN ":""]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="9" y="108" width="35" height="10" uuid="b81833bd-c503-4bb5-b930-d2935ecb27e5"/>
-				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[NAMA]]></text>
-			</staticText>
-			<textField isBlankWhenNull="true">
-				<reportElement x="55" y="117" width="171" height="20" uuid="75ab1413-27ac-4007-9e0e-54115a12e33f"/>
-				<textElement verticalAlignment="Top">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{bp_npwp_address}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement x="54" y="66" width="150" height="10" uuid="5e47ddb3-fa1b-4a14-ba3e-a528a5b5afab"/>
@@ -258,6 +189,76 @@ WHERE io.m_inout_id = $P{RECORD_ID}]]>
 PO.BOX 1002 Surabaya, Telp.031-8662350 (Hunting), Fax.031-8672804
 N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]></text>
 			</staticText>
+			<textField>
+				<reportElement x="44" y="109" width="12" height="10" uuid="0e54ec16-2031-439e-addd-913c903a3f2c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":":"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement x="56" y="137" width="155" height="10" uuid="11c04ff4-3b14-41c9-9038-d17219c83ef3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":""+$F{bp_npwp_id}+""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="10" y="118" width="35" height="10" uuid="91842123-0c12-4318-bce3-587abfafed1e"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":"ALAMAT"]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="56" y="118" width="171" height="20" uuid="d6a548b4-73b3-4c63-b531-8a4e5eca26d7"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":""+$F{bp_npwp_address}+""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="10" y="137" width="35" height="10" uuid="cea1aca7-e206-4bef-86c0-2096a6859f79"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":"NPWP"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="44" y="137" width="12" height="10" uuid="5286586e-96e9-428e-a943-5068dc819fbe"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":":"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="10" y="99" width="195" height="10" uuid="2f1a6ab0-bd56-4484-9a2d-61038b653b55"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":"WAJIB PAJAK "]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="56" y="109" width="155" height="10" uuid="9b7ab3c0-9339-47ac-bdd4-4f092e49f863"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":""+$F{bp_npwp_name}+""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="10" y="109" width="35" height="10" uuid="7021f652-8b30-432f-a77d-23676e05e027"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":"NAMA"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="44" y="118" width="12" height="10" uuid="8da6cc79-91f1-4b18-9caa-6e3de9736d5e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":":"]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
