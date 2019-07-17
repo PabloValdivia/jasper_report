@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="232"/>
+	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
@@ -20,9 +20,10 @@
 			when (il.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
 			else 1
 		 end
-		) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
+		) FROM m_inoutline WHERE m_inout_id=$P{RECORD_ID} AND isreward<>'Y') as koli,
+
 	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) *
-	    (il.weight *
+	    (p.weight *
 		 case
 			when il.c_uom_id = p.c_uom_id then 1
 			else uc.dividerate
@@ -418,11 +419,11 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textElement verticalAlignment="Top">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[]]></textFieldExpression>
+				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords($V{harga_jual_1}.toString())+" Rupiah"]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="68" y="67" width="100" height="28" uuid="35a5ace8-8690-492f-ae4b-51e0f02eb901"/>
-				<text><![CDATA[buat pas]]></text>
+				<text><![CDATA[]]></text>
 			</staticText>
 			<textField>
 				<reportElement x="433" y="203" width="124" height="20" uuid="253b3adc-bd3d-4598-9bd4-f2aec6957fd9"/>
