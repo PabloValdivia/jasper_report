@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="RKAlfa" language="groovy" pageWidth="595" pageHeight="421" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="3677f3d3-6195-4ce0-a647-65bfd0f62291">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="RKAlfa" language="groovy" pageWidth="595" pageHeight="425" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="3677f3d3-6195-4ce0-a647-65bfd0f62291">
 	<property name="ireport.zoom" value="1.5"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -20,10 +20,25 @@
 	    else uc.dividerate
 	  end
 	  )
-	 ) as tonase,
+	 ) as xtonase, --xtonase smntara tidak dipakai
 	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2,
 	ml.planqty as qty_order,
-	(SELECT name FROM c_uom WHERE c_uom_id=ml.c_uom_id) as uomname_order
+	(SELECT name FROM c_uom WHERE c_uom_id=ml.c_uom_id) as uomname_order,
+	(SELECT SUM(iol.weight)
+	 FROM m_movement mv
+	 INNER JOIN m_inout io ON io.m_inout_id = mv.m_inout_id
+	 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
+	 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
+	 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
+	 INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
+	 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
+	 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+	 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
+	 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
+	 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
+	 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
+	 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+	 WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E') as tonase --GGWP
 FROM m_movement mv
 INNER JOIN m_inout io ON io.m_inout_id = mv.m_inout_id
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
@@ -36,8 +51,8 @@ INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
-INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE mv.m_movement_id = $P{RECORD_ID}]]>
+LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
@@ -65,10 +80,11 @@ WHERE mv.m_movement_id = $P{RECORD_ID}]]>
 	<field name="productcode" class="java.lang.String"/>
 	<field name="productname" class="java.lang.String"/>
 	<field name="koli" class="java.math.BigDecimal"/>
-	<field name="tonase" class="java.math.BigDecimal"/>
+	<field name="xtonase" class="java.math.BigDecimal"/>
 	<field name="uomname2" class="java.lang.String"/>
 	<field name="qty_order" class="java.math.BigDecimal"/>
 	<field name="uomname_order" class="java.lang.String"/>
+	<field name="tonase" class="java.math.BigDecimal"/>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
@@ -321,18 +337,18 @@ WHERE mv.m_movement_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{qty_order}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="413" y="0" width="44" height="24" uuid="a1a81122-86f1-4352-813d-16fc6de52646"/>
+				<reportElement x="413" y="0" width="43" height="24" uuid="a1a81122-86f1-4352-813d-16fc6de52646"/>
 				<box leftPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
-					<rightPen lineWidth="0.0"/>
+					<rightPen lineWidth="1.0"/>
 				</box>
 				<textFieldExpression><![CDATA[$F{uomname_order}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="457" y="0" width="54" height="24" uuid="5c2c44ca-6231-41c7-af7f-a0e3369609a3"/>
 				<box>
-					<leftPen lineWidth="0.75"/>
+					<leftPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.75"/>
 					<rightPen lineWidth="0.75"/>
 				</box>
@@ -353,9 +369,44 @@ WHERE mv.m_movement_id = $P{RECORD_ID}]]>
 		<band height="24" splitType="Stretch"/>
 	</columnFooter>
 	<pageFooter>
-		<band height="28" splitType="Stretch"/>
+		<band height="28" splitType="Stretch">
+			<textField pattern="#,##0.00">
+				<reportElement x="87" y="-19" width="21" height="10" uuid="a4deae02-737c-4b44-b93d-ba0dcf24588b"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="77" y="-19" width="10" height="10" uuid="1f64f234-266e-462d-bdb4-eb72248d7a7b"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[/]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="-19" width="56" height="10" uuid="c3eefbc5-3847-40e1-8ff9-f6b90589c16b"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[KOLI/TONASE]]></text>
+			</staticText>
+			<textField pattern="###0">
+				<reportElement x="66" y="-19" width="12" height="10" uuid="9c8b064a-db97-4f45-a1c5-7e478e732706"/>
+				<textElement>
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
+			</textField>
+		</band>
 	</pageFooter>
 	<summary>
-		<band height="21" splitType="Stretch"/>
+		<band height="50" splitType="Stretch">
+			<staticText>
+				<reportElement x="379" y="30" width="132" height="20" uuid="0c124e72-b4bd-4ae3-a67a-4cbb591d0178"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom"/>
+				<text><![CDATA[( -------------------------------- )]]></text>
+			</staticText>
+		</band>
 	</summary>
 </jasperReport>

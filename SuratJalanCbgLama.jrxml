@@ -27,7 +27,7 @@
 	  end
 	  )
 	 ) as tonasex, --tonasex sementara tidak dipakai ada di IOL (pakai tonase)
-	(SELECT SUM(weight) FROM m_inoutline WHERE m_inout_id=$P{RECORD_ID}) as tonase,
+	(SELECT SUM(weight) FROM m_inoutline WHERE m_inout_id=$P{RECORD_ID} AND isreward<>'Y') as tonase,
 	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2, bpl.name as sts_wp,
 	(SELECT p2.name || ' : ' || ROUND(SUM(iol2.qtyentered))
 	 FROM m_inoutline iol2
@@ -44,8 +44,8 @@ INNER JOIN c_city c ON l.c_city_id = c.c_city_id
 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
-INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y']]>
+LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<>'E']]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
