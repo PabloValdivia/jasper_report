@@ -1,59 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ProformaInvoiceAlfa" language="groovy" pageWidth="617" pageHeight="395" columnWidth="577" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="e91f1c69-4edb-402b-a149-e8504a5cebfc">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="ProformaInvoiceAlfa" language="groovy" pageWidth="617" pageHeight="396" columnWidth="577" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="e91f1c69-4edb-402b-a149-e8504a5cebfc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer"/>
 	<queryString>
-		<![CDATA[-- PROFORMA INVOICE BARU
-SELECT row_number() over() as row_no, uc.isprintprice, i.c_invoice_id, i.documentno,
+		<![CDATA[SELECT row_number() over() as row_no, uc.dividerate, il.c_uom_id as trn_uom, p.c_uom_id as mst_uom, il.qtyentered,
 	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon,
        bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
 	   bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
-	   bpl.name as locationname, uo.name as uomnamex,
-	   (SELECT u1.name FROM c_uom u1
-              LEFT JOIN m_product p1 ON p1.c_uom_id=u1.c_uom_id
-	    WHERE p1.m_product_id=p.m_product_id) as uomname,
-	   p.name as productname,
-	   CASE
-	   	WHEN uc.isprintprice='Y' THEN il.qtyentered
-		ELSE il.qtyinvoiced
-	   END as qty,
-	   CASE
-	   	WHEN uc.isprintprice='Y' THEN il.priceentered
-		ELSE il.pricelist
-	   END as harga_satuan,
-	   il.rewarddiscount as rwd_disc,
-	   il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
-	   il.priceentered as harga_jual,
-	   (SELECT COUNT(m_inoutline_id) FROM m_inoutline WHERE m_inout_id=io.m_inout_id AND isreward<>'Y') as koli,
-	   (SELECT SUM(weight) FROM m_inoutline WHERE m_inout_id=$P{RECORD_ID} AND isreward<>'Y') as tonase,
-	  (i.dateinvoiced+pt.netdays) as duedate, bl.name as sts_wp,
+	   bpl.name as locationname, uo.name as uomname, p.name as productname, il.qtyentered as qty,
+	   il.pricelist as harga_satuan,
+	   il.rewarddiscount as rwd_disc, il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
+	   il.priceactual as harga_jual,
+	  (SELECT SUM(
+		qtyentered /
+		case
+			when (il.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
+			else 1
+		 end
+		) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) as koli,
+	   ((SELECT SUM(qtyentered) FROM c_invoiceline WHERE c_invoice_id=i.c_invoice_id) *
+	    (p.weight *
+		 case
+			when il.c_uom_id = p.c_uom_id then 1
+			else uc.dividerate
+		 end)
+	   ) as tonase,
+	  (i.dateinvoiced+pt.netdays) as duedate,
 	  (il.pricelist-(il.pricelist*il.regulardiscount)/100) as hrg_jual_proforma
 FROM m_inout io
-INNER JOIN m_inoutline iol on iol.m_inout_id=io.m_inout_id
-INNER JOIN c_order o on o.c_order_id=io.c_order_id
-INNER JOIN c_invoiceline il on il.m_inoutline_id=iol.m_inoutline_id
-INNER JOIN c_invoice i on i.c_invoice_id=il.c_invoice_id
-INNER JOIN m_product p on p.m_product_id=iol.m_product_id
-INNER JOIN c_bpartner_location bl ON bl.c_bpartner_location_id=i.c_bpartner_location_id
+INNER JOIN c_order o ON io.c_order_id = o.c_order_id
+INNER JOIN c_invoice i ON o.c_order_id = i.c_order_id
+INNER JOIN c_invoiceline il ON i.c_invoice_id = il.c_invoice_id
 INNER JOIN c_uom uo ON il.c_uom_id = uo.c_uom_id
 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
-INNER JOIN c_bpartner bp ON i.c_bpartner_id = bp.c_bpartner_id
-INNER JOIN c_bpartner_location bpl ON i.c_bpartner_location_id = bpl.c_bpartner_location_id
+INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
+INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
-LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+INNER JOIN m_product p ON il.m_product_id = p.m_product_id
+INNER JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
 INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
-WHERE io.m_inout_id = $P{RECORD_ID}
-AND iol.isreward<>'Y']]>
+WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
-	<field name="isprintprice" class="java.lang.String"/>
-	<field name="c_invoice_id" class="java.math.BigDecimal"/>
-	<field name="documentno" class="java.lang.String"/>
+	<field name="dividerate" class="java.math.BigDecimal"/>
+	<field name="trn_uom" class="java.math.BigDecimal"/>
+	<field name="mst_uom" class="java.math.BigDecimal"/>
+	<field name="qtyentered" class="java.math.BigDecimal"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
 	<field name="ad_org_id" class="java.math.BigDecimal"/>
+	<field name="documentno" class="java.lang.String"/>
 	<field name="description" class="java.lang.String"/>
 	<field name="dateinvoiced" class="java.sql.Timestamp"/>
 	<field name="no_order" class="java.lang.String"/>
@@ -69,7 +67,6 @@ AND iol.isreward<>'Y']]>
 	<field name="isprinted" class="java.lang.String"/>
 	<field name="bp_city" class="java.lang.String"/>
 	<field name="locationname" class="java.lang.String"/>
-	<field name="uomnamex" class="java.lang.String"/>
 	<field name="uomname" class="java.lang.String"/>
 	<field name="productname" class="java.lang.String"/>
 	<field name="qty" class="java.math.BigDecimal"/>
@@ -78,10 +75,9 @@ AND iol.isreward<>'Y']]>
 	<field name="add_disc" class="java.math.BigDecimal"/>
 	<field name="reg_disc" class="java.math.BigDecimal"/>
 	<field name="harga_jual" class="java.math.BigDecimal"/>
-	<field name="koli" class="java.lang.Long"/>
+	<field name="koli" class="java.math.BigDecimal"/>
 	<field name="tonase" class="java.math.BigDecimal"/>
 	<field name="duedate" class="java.sql.Date"/>
-	<field name="sts_wp" class="java.lang.String"/>
 	<field name="hrg_jual_proforma" class="java.math.BigDecimal"/>
 	<variable name="hrg_jual_proforma_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{hrg_jual_proforma}]]></variableExpression>
@@ -112,7 +108,7 @@ AND iol.isreward<>'Y']]>
 				<text><![CDATA[MADIUN - INDONESIA]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="346" y="0" width="230" height="97" uuid="a2dde977-fc6f-42d3-a311-6688b45688e4"/>
+				<reportElement x="346" y="0" width="231" height="97" uuid="a2dde977-fc6f-42d3-a311-6688b45688e4"/>
 				<box>
 					<topPen lineWidth="0.75"/>
 					<leftPen lineWidth="0.75"/>
@@ -268,7 +264,7 @@ AND iol.isreward<>'Y']]>
 				<text><![CDATA[:]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="504" y="56" width="67" height="27" uuid="3bc52d3d-5d8f-4e2d-8bb1-938a72cb1e6f"/>
+				<reportElement x="507" y="56" width="67" height="27" uuid="3bc52d3d-5d8f-4e2d-8bb1-938a72cb1e6f"/>
 				<box>
 					<topPen lineWidth="0.5" lineStyle="Dashed"/>
 					<leftPen lineWidth="0.5" lineStyle="Dashed"/>
@@ -410,7 +406,7 @@ AND iol.isreward<>'Y']]>
 				<text><![CDATA[Discount (%)]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="465" y="0" width="111" height="15" uuid="64c5fdec-d8a9-4540-82f0-87b94deba111"/>
+				<reportElement x="465" y="0" width="112" height="15" uuid="64c5fdec-d8a9-4540-82f0-87b94deba111"/>
 				<box>
 					<topPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
@@ -486,7 +482,7 @@ AND iol.isreward<>'Y']]>
 				<textFieldExpression><![CDATA[$F{reg_disc}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="0" width="111" height="10" uuid="324f1978-42ad-4817-9a27-2403ecbedcef"/>
+				<reportElement x="465" y="0" width="112" height="10" uuid="324f1978-42ad-4817-9a27-2403ecbedcef"/>
 				<box rightPadding="5">
 					<leftPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.75"/>
@@ -512,11 +508,7 @@ AND iol.isreward<>'Y']]>
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="1" splitType="Stretch">
-			<rectangle>
-				<reportElement x="0" y="0" width="576" height="1" uuid="98e6bc80-a954-41bb-ad7c-82031e10ade4"/>
-			</rectangle>
-		</band>
+		<band splitType="Stretch"/>
 	</columnFooter>
 	<pageFooter>
 		<band height="129" splitType="Stretch">
@@ -634,7 +626,7 @@ AND iol.isreward<>'Y']]>
 				<text><![CDATA[Jumlah Penjualan Rp.]]></text>
 			</staticText>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="0" width="111" height="35" uuid="4aedb785-6161-4878-a6a5-f9b8c83c6675"/>
+				<reportElement x="465" y="0" width="112" height="35" uuid="4aedb785-6161-4878-a6a5-f9b8c83c6675"/>
 				<box topPadding="5" rightPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
@@ -646,7 +638,7 @@ AND iol.isreward<>'Y']]>
 				<textFieldExpression><![CDATA[$V{hrg_jual_proforma_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="465" y="35" width="111" height="26" uuid="116264ea-9568-4c86-bfea-f46d6579d8b5"/>
+				<reportElement x="465" y="35" width="112" height="26" uuid="116264ea-9568-4c86-bfea-f46d6579d8b5"/>
 				<box topPadding="5" rightPadding="5">
 					<leftPen lineWidth="0.75"/>
 					<bottomPen lineWidth="0.75"/>
@@ -665,7 +657,7 @@ AND iol.isreward<>'Y']]>
 				<text><![CDATA[Netto Rp.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="0" y="0" width="576" height="129" uuid="bdba7929-02b8-412f-9300-0b4e36cb8e08"/>
+				<reportElement x="0" y="0" width="577" height="129" uuid="bdba7929-02b8-412f-9300-0b4e36cb8e08"/>
 				<box>
 					<topPen lineWidth="0.75"/>
 					<leftPen lineWidth="0.75"/>

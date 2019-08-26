@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="InvoiceCoba" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="92b96826-c5bc-4854-9ee4-3d440a3974eb">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="RECORD_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT ii.*, bp.name as "nama_bp", l.address1 as "alamat_bp",
+       c.name as "kota_bp"
+FROM c_invoice ii
+LEFT JOIN c_bpartner bp ON bp.c_bpartner_id = ii.c_bpartner_id
+LEFT JOIN c_bpartner_location bpl ON bpl.c_bpartner_id = bp.c_bpartner_id
+LEFT JOIN c_location l ON l.c_location_id = bpl.c_location_id
+LEFT JOIN c_city c on c.c_city_id=l.c_city_id
+WHERE ii.c_invoice_ID=$P{RECORD_ID}]]>
+	</queryString>
+	<field name="c_invoice_id" class="java.math.BigDecimal"/>
+	<field name="ad_client_id" class="java.math.BigDecimal"/>
+	<field name="ad_org_id" class="java.math.BigDecimal"/>
+	<field name="isactive" class="java.lang.String"/>
+	<field name="created" class="java.sql.Timestamp"/>
+	<field name="createdby" class="java.math.BigDecimal"/>
+	<field name="updated" class="java.sql.Timestamp"/>
+	<field name="updatedby" class="java.math.BigDecimal"/>
+	<field name="issotrx" class="java.lang.String"/>
+	<field name="documentno" class="java.lang.String"/>
+	<field name="docstatus" class="java.lang.String"/>
+	<field name="docaction" class="java.lang.String"/>
+	<field name="processing" class="java.lang.String"/>
+	<field name="processed" class="java.lang.String"/>
+	<field name="posted" class="java.lang.String"/>
+	<field name="c_doctype_id" class="java.math.BigDecimal"/>
+	<field name="c_doctypetarget_id" class="java.math.BigDecimal"/>
+	<field name="c_order_id" class="java.math.BigDecimal"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="isapproved" class="java.lang.String"/>
+	<field name="istransferred" class="java.lang.String"/>
+	<field name="isprinted" class="java.lang.String"/>
+	<field name="salesrep_id" class="java.math.BigDecimal"/>
+	<field name="dateinvoiced" class="java.sql.Timestamp"/>
+	<field name="dateprinted" class="java.sql.Timestamp"/>
+	<field name="dateacct" class="java.sql.Timestamp"/>
+	<field name="c_bpartner_id" class="java.math.BigDecimal"/>
+	<field name="c_bpartner_location_id" class="java.math.BigDecimal"/>
+	<field name="poreference" class="java.lang.String"/>
+	<field name="isdiscountprinted" class="java.lang.String"/>
+	<field name="dateordered" class="java.sql.Timestamp"/>
+	<field name="c_currency_id" class="java.math.BigDecimal"/>
+	<field name="paymentrule" class="java.lang.String"/>
+	<field name="c_paymentterm_id" class="java.math.BigDecimal"/>
+	<field name="c_charge_id" class="java.math.BigDecimal"/>
+	<field name="chargeamt" class="java.math.BigDecimal"/>
+	<field name="totallines" class="java.math.BigDecimal"/>
+	<field name="grandtotal" class="java.math.BigDecimal"/>
+	<field name="m_pricelist_id" class="java.math.BigDecimal"/>
+	<field name="istaxincluded" class="java.lang.String"/>
+	<field name="c_campaign_id" class="java.math.BigDecimal"/>
+	<field name="c_project_id" class="java.math.BigDecimal"/>
+	<field name="c_activity_id" class="java.math.BigDecimal"/>
+	<field name="ispaid" class="java.lang.String"/>
+	<field name="c_payment_id" class="java.math.BigDecimal"/>
+	<field name="c_cashline_id" class="java.math.BigDecimal"/>
+	<field name="createfrom" class="java.lang.String"/>
+	<field name="generateto" class="java.lang.String"/>
+	<field name="sendemail" class="java.lang.String"/>
+	<field name="ad_user_id" class="java.math.BigDecimal"/>
+	<field name="copyfrom" class="java.lang.String"/>
+	<field name="isselfservice" class="java.lang.String"/>
+	<field name="ad_orgtrx_id" class="java.math.BigDecimal"/>
+	<field name="user1_id" class="java.math.BigDecimal"/>
+	<field name="user2_id" class="java.math.BigDecimal"/>
+	<field name="c_conversiontype_id" class="java.math.BigDecimal"/>
+	<field name="ispayschedulevalid" class="java.lang.String"/>
+	<field name="ref_invoice_id" class="java.math.BigDecimal"/>
+	<field name="isindispute" class="java.lang.String"/>
+	<field name="invoicecollectiontype" class="java.lang.String"/>
+	<field name="m_rma_id" class="java.math.BigDecimal"/>
+	<field name="dunninggrace" class="java.sql.Date"/>
+	<field name="c_dunninglevel_id" class="java.math.BigDecimal"/>
+	<field name="reversal_id" class="java.math.BigDecimal"/>
+	<field name="processedon" class="java.math.BigDecimal"/>
+	<field name="c_cashplanline_id" class="java.math.BigDecimal"/>
+	<field name="c_invoice_uu" class="java.lang.String"/>
+	<field name="isfixedassetinvoice" class="java.lang.String"/>
+	<field name="receiveddate" class="java.sql.Timestamp"/>
+	<field name="isgetreward" class="java.lang.String"/>
+	<field name="paiddate" class="java.sql.Timestamp"/>
+	<field name="reasonreversed" class="java.lang.String"/>
+	<field name="isreceived" class="java.lang.String"/>
+	<field name="nama_bp" class="java.lang.String"/>
+	<field name="alamat_bp" class="java.lang.String"/>
+	<field name="kota_bp" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch"/>
+	</title>
+	<pageHeader>
+		<band height="100" splitType="Stretch">
+			<textField>
+				<reportElement x="15" y="0" width="100" height="20" uuid="d91e73e9-361e-4451-aa63-b637f3bc46fd"/>
+				<textFieldExpression><![CDATA[$F{documentno}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="148" y="0" width="152" height="20" uuid="e91a9070-99f6-4b31-9948-340b8d902449"/>
+				<textFieldExpression><![CDATA[$F{c_invoice_id}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="315" y="0" width="240" height="20" uuid="06697a32-eb2d-4802-859f-5b5db4a384ea"/>
+				<textFieldExpression><![CDATA[$F{c_invoice_id}.floatValue() + $F{c_invoice_id}.floatValue() + 1]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="31" width="115" height="16" uuid="60d0c679-a4b1-4fb3-9728-6166307daf8c"/>
+				<textElement verticalAlignment="Middle"/>
+				<text><![CDATA[TOKO/PERUSAHAAN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="47" width="51" height="16" uuid="a9b8c2ff-94d8-483c-b8ea-7d607c162c32"/>
+				<textElement verticalAlignment="Middle"/>
+				<text><![CDATA[NAMA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="63" width="51" height="16" uuid="d8271285-bf2b-44a5-a2f0-31840f250f58"/>
+				<textElement verticalAlignment="Middle"/>
+				<text><![CDATA[ALAMAT]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="79" width="51" height="16" uuid="6e566bc2-9dc2-46fe-81be-22863305bd2a"/>
+				<textElement verticalAlignment="Middle"/>
+				<text><![CDATA[KOTA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="51" y="47" width="12" height="16" uuid="d8be3716-5902-43e8-a505-1ce88500ec02"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="51" y="79" width="12" height="16" uuid="a334e282-2d3b-4d27-b1e2-b0927aec90b9"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="51" y="63" width="12" height="16" uuid="4321dbba-8457-4985-809f-ec524d29a089"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="63" y="47" width="148" height="16" uuid="bcde0af7-188d-4d52-bd31-294ebbe3d915"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{nama_bp}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="63" y="63" width="148" height="16" uuid="debd6c80-533a-493e-8089-0a17bc3f8958"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{alamat_bp}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="63" y="79" width="148" height="16" uuid="46bc64e2-212d-4fa8-8d1c-776b769c2d9e"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{kota_bp}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="61" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="125" splitType="Stretch"/>
+	</detail>
+	<columnFooter>
+		<band height="45" splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="54" splitType="Stretch">
+			<textField>
+				<reportElement x="455" y="0" width="100" height="20" uuid="3a371b20-8018-4077-b7dc-8b5a2073d8b7"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="42" splitType="Stretch"/>
+	</summary>
+</jasperReport>
