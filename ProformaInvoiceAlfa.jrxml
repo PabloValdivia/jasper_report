@@ -541,7 +541,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="6" y="26" width="243" height="91" uuid="085ae101-8fc9-4869-9696-ab9be863c0a7"/>
+				<reportElement x="6" y="26" width="257" height="91" uuid="085ae101-8fc9-4869-9696-ab9be863c0a7"/>
 				<box topPadding="0" leftPadding="0">
 					<topPen lineWidth="0.5" lineStyle="Solid"/>
 					<leftPen lineWidth="0.5" lineStyle="Solid"/>
@@ -586,7 +586,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID}]]>
 				<text><![CDATA[2.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="24" y="91" width="223" height="16" uuid="05c2d896-32fb-4b7f-917f-c7fb1969b152"/>
+				<reportElement x="24" y="91" width="239" height="16" uuid="05c2d896-32fb-4b7f-917f-c7fb1969b152"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="LapJualBlnNilai" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="c45f47d5-ca82-4e25-9f20-06667e44e13d">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT row_number() over(ORDER BY sr.name) as row_no,
+       sr.c_salesregion_id, sr.name as sales_rayon, bp.name as sales_name, SUM(i.grandtotal) as total_nilai
+FROM c_invoice i
+INNER JOIN ad_user u ON u.ad_user_id=i.salesrep_id
+INNER JOIN c_bpartner bp ON bp.c_bpartner_id=u.c_bpartner_id
+INNER JOIN c_salesregion sr ON sr.c_salesregion_id=i.c_salesregion_id
+WHERE i.dateinvoiced BETWEEN $P{start_date} AND $P{end_date}
+AND i.docstatus IN ('CO')
+GROUP BY sr.c_salesregion_id, sr.name, bp.name
+ORDER BY sr.name]]>
+	</queryString>
+	<field name="row_no" class="java.lang.Long"/>
+	<field name="c_salesregion_id" class="java.math.BigDecimal"/>
+	<field name="sales_rayon" class="java.lang.String"/>
+	<field name="sales_name" class="java.lang.String"/>
+	<field name="total_nilai" class="java.math.BigDecimal"/>
+	<variable name="total_nilai_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{total_nilai}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="40" splitType="Stretch">
+			<textField>
+				<reportElement x="130" y="0" width="310" height="40" uuid="13d38fe9-7509-42b9-adf6-f734262df6d3"/>
+				<textElement textAlignment="Center">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["LAPORAN PENJUALAN PER-BULAN (VALUE) TDI MADIUN"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="35" splitType="Stretch">
+			<textField pattern="dd-MMM-yy">
+				<reportElement x="415" y="15" width="55" height="20" uuid="152a1029-7cb7-47df-a214-a1dd1f2c6448"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd-MMM-yy">
+				<reportElement x="487" y="15" width="67" height="20" uuid="bde01042-aca1-4b36-b66b-dd777ab92870"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="344" y="15" width="70" height="20" uuid="7eddd2bb-f7f0-406e-9a5a-511e10628df0"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Periode :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="474" y="15" width="17" height="20" uuid="7a614c00-6c48-458f-9012-36efd181e627"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[s/d]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="21" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="1" width="30" height="20" backcolor="#E0E0E0" uuid="c7bc36d5-fdc3-49a4-b4a1-eeac996a71ca"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[NO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="29" y="1" width="79" height="20" backcolor="#E0E0E0" uuid="073b4508-bcba-46cb-8d56-df6c66f2ff0f"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[KS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="108" y="1" width="288" height="20" backcolor="#E0E0E0" uuid="24e6eb7d-bbe4-4414-b50b-89bde741a45b"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[NAMA SALESMAN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="396" y="1" width="159" height="20" backcolor="#E0E0E0" uuid="c6ddbc96-2310-4d24-91fc-5e3173170c67"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[NILAI]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="30" height="20" uuid="1f064841-1fc9-45c2-8a19-428d00a4c799"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="29" y="0" width="79" height="20" uuid="39ccf56b-4373-4c40-ac38-b19ceb7feb53"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{sales_rayon}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="108" y="0" width="288" height="20" uuid="a6d5fbe8-6c28-4cd3-921e-377b64e6c773"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{sales_name}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="396" y="0" width="159" height="20" uuid="0db8f2cb-4a80-452e-8a59-823e606b0e97"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{total_nilai}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="146" splitType="Stretch">
+			<textField pattern="#,##0.00">
+				<reportElement x="396" y="0" width="159" height="20" uuid="3a4c543d-dff7-4d3d-b63a-5c34e6bdd7cb"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{total_nilai_1}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="0" width="396" height="20" uuid="d74fcc0c-ddd4-47bf-b149-673231ee8f69"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[TOTAL]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="11" y="131" width="81" height="15" uuid="c13f200c-86f8-4462-b6ae-0c820b23fea3"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["Adm A"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="460" y="131" width="81" height="15" uuid="388d76d8-cd03-44d6-9b93-b46731b121c3"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["BM Madiun"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="11" y="116" width="81" height="13" uuid="9ea4a6a8-ff7d-44de-ace4-35bb10fb6840"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA["(Lany K.)"]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd MMMMM yyyy">
+				<reportElement x="60" y="30" width="91" height="15" uuid="e85bcd8f-d40f-4f7e-8738-5cc488d383d0"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="11" y="50" width="81" height="13" uuid="8849d479-37a4-464d-b0f6-ff0e615e2743"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Dibuat Oleh,]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="460" y="51" width="81" height="13" uuid="688b86ea-4c3f-47bd-a808-1783c6047de3"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Mengetahui,]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="4" y="30" width="56" height="15" uuid="e15b4722-8d01-4866-a000-30ff0160a1ef"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA["Madiun, "]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="460" y="118" width="81" height="13" uuid="40b5d71f-e3e3-414d-a321-f2f91c588154"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA["(Eko Purnomo)"]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

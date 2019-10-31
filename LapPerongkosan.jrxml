@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="LapPerongkosan" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="8cf51459-baf5-4156-9eeb-01312c64ccd4">
+	<property name="ireport.zoom" value="1.3310000000000006"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="DateTrx" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DateTrx2" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[--Laporan Perongosan
+SELECT * FROM (
+	--Detil Transaksi Kas September
+	SELECT p.datetrx, ba.c_bankaccount_id, c.name,
+	       CASE
+	       	WHEN p.description is null THEN c.name
+		ELSE p.description
+	       END as ket, p.isreceipt,
+		   CASE
+			--WHEN p.isreceipt='Y' THEN SUM(p.payamt)
+		    	WHEN p.isreceipt='Y' THEN p.payamt
+			ELSE 0
+		   END as debet,
+		   CASE
+			--WHEN p.isreceipt='N' THEN SUM(p.payamt)
+			WHEN p.isreceipt='N' THEN p.payamt
+			ELSE 0
+		   END as kredit, 1 as flag
+	FROM c_payment p
+	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
+	AND p.c_bankaccount_id=1000003
+	--AND p.isreceipt='Y'
+	--GROUP BY p.datetrx, ba.c_bankaccount_id, c.name, p.isreceipt
+	--ORDER BY p.datetrx, ba.c_bankaccount_id, p.isreceipt desc
+UNION ALL
+	--Saldo Awal Oktober 2019
+	SELECT null, null, null, 'SALDO AWAL OKTOBER 2019', null,
+	(SELECT
+	 (SELECT COALESCE(sum(p.payamt),0)
+	  FROM c_payment p
+	  WHERE p.isreceipt='Y'
+	  AND p.c_bankaccount_id=1000003
+	  AND p.documentdate BETWEEN '2019-08-01' AND '2019-08-31') -
+	  COALESCE(sum(p1.payamt),0) as sisa_saldo
+	FROM c_payment p1
+	WHERE p1.isreceipt='N'
+	AND p1.c_bankaccount_id=1000003
+	AND p1.datetrx BETWEEN '2019-08-01' AND '2019-08-31')+ -- Sisa Saldo Agustus
+	(SELECT COALESCE(sum(p.payamt),0)
+	 FROM c_payment p
+	 WHERE p.isreceipt='Y'
+	 AND p.c_bankaccount_id=1000003
+	 AND p.datetrx BETWEEN '2019-09-01' AND '2019-09-30') -
+	 COALESCE(sum(p1.payamt),0) as sisa_saldo, null, 0 as flag
+	FROM c_payment p1
+	WHERE p1.isreceipt='N'
+	AND p1.c_bankaccount_id=1000003
+	AND p1.datetrx BETWEEN '2019-09-01' AND '2019-09-30' --Sisa Saldo September
+ ) as lap_perongosan
+ ORDER BY flag, datetrx, c_bankaccount_id, isreceipt desc]]>
+	</queryString>
+	<field name="datetrx" class="java.sql.Timestamp"/>
+	<field name="c_bankaccount_id" class="java.math.BigDecimal"/>
+	<field name="name" class="java.lang.String"/>
+	<field name="ket" class="java.lang.String"/>
+	<field name="isreceipt" class="java.lang.String"/>
+	<field name="debet" class="java.math.BigDecimal"/>
+	<field name="kredit" class="java.math.BigDecimal"/>
+	<field name="flag" class="java.lang.Integer"/>
+	<variable name="debet_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{debet}]]></variableExpression>
+	</variable>
+	<variable name="kredit_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{kredit}]]></variableExpression>
+	</variable>
+	<variable name="debet_2" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{debet}]]></variableExpression>
+	</variable>
+	<variable name="debet_3" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{debet}]]></variableExpression>
+	</variable>
+	<variable name="kredit_2" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{kredit}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="141" height="20" uuid="bfd70238-cd99-4602-b2fa-2fd22761549f"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="12"/>
+				</textElement>
+				<text><![CDATA[Laporan Perongkosan]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="62" height="20" uuid="c2971ed3-85ec-4dd0-b6e6-2443035aa140"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[PERIODE :]]></text>
+			</staticText>
+			<textField pattern="dd-MMM-yyyy">
+				<reportElement x="62" y="0" width="96" height="20" uuid="8b93672d-d304-4364-829a-66bf0f77e417"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{DateTrx}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="158" y="0" width="27" height="20" uuid="2e616ae4-ca87-4405-a653-4f88e30a1b5f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[S/D]]></text>
+			</staticText>
+			<textField pattern="dd-MMM-yyyy">
+				<reportElement x="185" y="0" width="96" height="20" uuid="645fae00-ed80-41a2-b630-f1ef726afbae"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{DateTrx2}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="22" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="2" width="99" height="20" uuid="3be61924-063f-4c25-a040-eec5f78fdf37"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tgl Transaksi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="99" y="2" width="207" height="20" uuid="5f63c04a-3f56-462d-be34-d9db81b2dd3e"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Transaksi]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="306" y="2" width="125" height="20" uuid="0c6f4ff1-8cc5-4d9d-b093-1e6db571f05f"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Debet]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="430" y="2" width="125" height="20" uuid="a1006506-2101-4c8c-8380-44a5e7545a42"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Kredit]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement isPrintRepeatedValues="false" x="1" y="0" width="98" height="20" uuid="01c84cee-6162-49e0-adf2-1a06f8fceea6"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{datetrx}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="99" y="0" width="207" height="20" uuid="30e9fa9c-df7e-4c5c-8bf0-91855a2104ed"/>
+				<box leftPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ket}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="306" y="0" width="125" height="20" uuid="7303dd97-024c-4a50-b4cf-fd25d6b3615d"/>
+				<box rightPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{debet}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="430" y="0" width="125" height="20" uuid="18f84ab0-c040-4539-8023-8c8da3161aaf"/>
+				<box rightPadding="5">
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{kredit}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="19" width="100" height="1" uuid="d68b4285-d791-4694-981e-1347ad7e8d1f"/>
+			</line>
+			<line>
+				<reportElement x="0" y="0" width="1" height="20" uuid="4971cc06-4a9a-4b80-9897-5ae21d1e6ea9"/>
+			</line>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="20" splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="30" splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="45" splitType="Stretch">
+			<staticText>
+				<reportElement x="99" y="0" width="207" height="20" uuid="2989b44b-72c4-4f1b-a45c-7a748053f0d1"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement x="306" y="0" width="125" height="20" uuid="14398a3a-e940-476a-a3a9-cf24fcb1bcfa"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{debet_3}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="431" y="0" width="124" height="20" uuid="c6981913-747b-4606-ad62-9b6cf026fcba"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{kredit_2}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="99" y="19" width="207" height="20" uuid="243c750b-fbd1-4312-885f-0e853e167fcf"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Sisa Saldo]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement x="306" y="19" width="249" height="20" uuid="1034c5c5-626d-456d-b572-6d9d3561f1e2"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{debet_3}-$V{kredit_2}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

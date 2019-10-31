@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="RKAlfa" language="groovy" pageWidth="274" pageHeight="396" columnWidth="256" leftMargin="9" rightMargin="9" topMargin="9" bottomMargin="9" uuid="3677f3d3-6195-4ce0-a647-65bfd0f62291">
+	<property name="ireport.zoom" value="1.652892561983471"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="RECORD_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT row_number() over() as row_no, mv.documentno as mv_docno,
+	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, mv.movementdate as mv_date, o.dateordered, o.poreference, sr.name as rayon,
+    bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id, bp.c_bpartner_id as bp_id,
+	bp.name as bp_name, l.address1 as bp_address, l.isprinted, UPPER(c.name) as bp_city,
+	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, p.value as productcode,
+	CASE
+	  WHEN iol.c_uom_id=uc.c_uom_to_id THEN p.description
+	  ELSE p.name
+	END as productname,
+	p.description as productnamex,
+	(SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) as kolix, --gak berlaku
+	((SELECT SUM(qtyentered) FROM c_orderline WHERE c_order_id=o.c_order_id AND priceentered > 1) *
+	 (p.weight *
+	  case
+	  	when iol.c_uom_id = p.c_uom_id then 1
+	    else uc.dividerate
+	  end
+	  )
+	 ) as xtonase, --xtonase smntara tidak dipakai
+	(SELECT name FROM c_uom WHERE c_uom_id=uc.c_uom_to_id) as uomname2,
+	ml.planqty as qty_order,
+	(SELECT name FROM c_uom WHERE c_uom_id=ml.c_uom_id) as uomname_order,
+	(SELECT SUM(iol.weight)
+	 FROM m_movement mv
+	 INNER JOIN m_inout io ON io.m_inout_id = mv.m_inout_id
+	 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
+	 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
+	 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
+	 INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
+	 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
+	 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+	 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
+	 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
+	 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
+	 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
+	 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+	 WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E') as tonase, --GGWP
+	 io.koli
+FROM m_movement mv
+INNER JOIN m_inout io ON io.m_inout_id = mv.m_inout_id
+INNER JOIN c_order o ON io.c_order_id = o.c_order_id
+INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
+INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
+INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
+INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
+INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
+INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
+INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
+INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
+LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
+	</queryString>
+	<field name="row_no" class="java.lang.Long"/>
+	<field name="mv_docno" class="java.lang.String"/>
+	<field name="ad_client_id" class="java.math.BigDecimal"/>
+	<field name="ad_org_id" class="java.math.BigDecimal"/>
+	<field name="documentno" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="movementdate" class="java.sql.Timestamp"/>
+	<field name="doc_corder" class="java.lang.String"/>
+	<field name="mv_date" class="java.sql.Timestamp"/>
+	<field name="dateordered" class="java.sql.Timestamp"/>
+	<field name="poreference" class="java.lang.String"/>
+	<field name="rayon" class="java.lang.String"/>
+	<field name="name2" class="java.lang.String"/>
+	<field name="bp_npwp_name" class="java.lang.String"/>
+	<field name="bp_npwp_address" class="java.lang.String"/>
+	<field name="bp_npwp_id" class="java.lang.String"/>
+	<field name="bp_id" class="java.math.BigDecimal"/>
+	<field name="bp_name" class="java.lang.String"/>
+	<field name="bp_address" class="java.lang.String"/>
+	<field name="isprinted" class="java.lang.String"/>
+	<field name="bp_city" class="java.lang.String"/>
+	<field name="locationname" class="java.lang.String"/>
+	<field name="qtyentered" class="java.math.BigDecimal"/>
+	<field name="descinoutline" class="java.lang.String"/>
+	<field name="uomname" class="java.lang.String"/>
+	<field name="productcode" class="java.lang.String"/>
+	<field name="productname" class="java.lang.String"/>
+	<field name="productnamex" class="java.lang.String"/>
+	<field name="kolix" class="java.math.BigDecimal"/>
+	<field name="xtonase" class="java.math.BigDecimal"/>
+	<field name="uomname2" class="java.lang.String"/>
+	<field name="qty_order" class="java.math.BigDecimal"/>
+	<field name="uomname_order" class="java.lang.String"/>
+	<field name="tonase" class="java.math.BigDecimal"/>
+	<field name="koli" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="14" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="116" height="14" uuid="581293a1-abc0-407c-b804-48eeabe5be6c"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[RENCANA KIRIM]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="116" y="0" width="37" height="14" uuid="0d0a55bc-3544-42c4-9dd6-7ccf5784a6c4"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{rayon}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="66" splitType="Stretch">
+			<staticText>
+				<reportElement x="1" y="21" width="44" height="12" uuid="4c48edb7-e10c-4dbb-8052-39268f5e5e56"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[NO.ORD]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="2" y="43" width="40" height="12" uuid="b4953686-6824-4c5e-bf5c-54aa0d3a4aac"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[KET.]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="53" y="21" width="100" height="12" uuid="bd68064a-4a78-4920-b676-062add654eef"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{doc_corder}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="153" y="16" width="103" height="24" uuid="83b4d5e2-1b86-4156-8b6a-11cc03111fd7"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{bp_address}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="52" y="32" width="73" height="12" uuid="5373cad2-4a4e-4470-bb17-7e7976d308de"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dateordered}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="153" y="0" width="103" height="17" uuid="f2422a8b-a10d-47d7-8b9f-c99833dc6281"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{bp_name}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="45" y="32" width="8" height="12" uuid="0d74fca1-32aa-444e-aa70-5e67d5a63e8c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="45" y="43" width="8" height="12" uuid="bfa6d74e-3d69-4646-9dfa-dc8829fcf633"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="45" y="21" width="8" height="12" uuid="f3a6188f-4cf5-482a-8e8e-1c9cd6fc9e6a"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="1" y="32" width="41" height="12" uuid="e1189cc3-8df2-4c9c-8546-3dc972e4532c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[TGL]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="153" y="39" width="87" height="12" uuid="cd64a063-cf24-4137-b004-95e3423cc1d7"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{bp_city}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="52" y="0" width="101" height="12" uuid="704bb847-605e-4a24-8a76-93c4639b9851"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{mv_docno}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1" y="0" width="41" height="12" uuid="a72e8d13-5663-42ef-8970-247ec9791ba3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[NO. RK]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="45" y="0" width="8" height="12" uuid="a9789a98-6cad-4f00-892f-806aa384b02a"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="52" y="11" width="84" height="12" uuid="1a5c279f-ed28-4bf4-b782-292b5129188b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{mv_date}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="1" y="11" width="41" height="12" uuid="bca82865-26d2-457c-af80-c998a68a5cf8"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="false"/>
+				</textElement>
+				<text><![CDATA[TGL]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="45" y="11" width="8" height="12" uuid="af18a966-7c28-4287-bf42-5221e5d7baf1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[:]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="65" width="256" height="1" uuid="447f4811-5b78-4a8e-9b1c-0a2c85b29585"/>
+			</line>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="43">
+			<textField>
+				<reportElement x="1" y="0" width="19" height="14" uuid="26e0f003-72c8-4811-bbae-7746bcfc37d4"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement mode="Opaque" x="20" y="0" width="236" height="29" uuid="ca4d35a3-52a6-4be7-9b64-8d501217e456"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{productname}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="209" y="29" width="47" height="12" uuid="f4065f64-cd2b-4239-ab61-b30ed145089f"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA['- '+$F{uomname_order}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0">
+				<reportElement x="186" y="29" width="21" height="12" uuid="1dacaa11-13b0-4086-8556-3d9f9d13f8a6"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{qty_order}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="161" y="29" width="25" height="12" uuid="0b170c27-f61c-4c3c-aa1b-e2f7c56a97ae"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[QTY:]]></text>
+			</staticText>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="24" splitType="Stretch">
+			<textField pattern="#,##0.00">
+				<reportElement x="86" y="12" width="52" height="12" uuid="a4deae02-737c-4b44-b93d-ba0dcf24588b"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="2" y="12" width="83" height="12" uuid="c3eefbc5-3847-40e1-8ff9-f6b90589c16b"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<text><![CDATA[TOTAL TONASE :]]></text>
+			</staticText>
+			<line>
+				<reportElement x="0" y="3" width="183" height="1" uuid="6cea0107-56f2-4113-9cc7-aa1a7a98ebf3"/>
+			</line>
+			<textField>
+				<reportElement x="185" y="0" width="70" height="10" uuid="dcb51139-b091-48ba-b753-145caf962c03"/>
+				<textElement textAlignment="Center">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression><![CDATA["FORM-GJ-001 / rev.00"]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0">
+				<reportElement x="190" y="12" width="52" height="12" uuid="30f3c850-b78e-46ee-b5df-d651283981a3"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="147" y="12" width="45" height="12" uuid="9c58e7ed-d7eb-4eb9-b1bf-70e3624f794f"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<text><![CDATA[TOTAL :]]></text>
+			</staticText>
+		</band>
+	</columnFooter>
+</jasperReport>

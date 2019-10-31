@@ -7,10 +7,14 @@
 	<queryString>
 		<![CDATA[-- Ini yg dipakai
 SELECT
-  	   row_number() over() as row_no, m.documentno, m.documentdate, m.POreference,
-	   p.value, p.name as nama_brg, ml.c_uom_id, u.name as kemasan, ml.qtydelivered as order_unit,
-	   ml.qty as order_dospail,
-	   ml.qtyonhand, ml.avgqtyinvoiced,
+  	   row_number() over(ORDER BY p.name) as row_no, m.documentno, m.documentdate, m.POreference,
+	   p.value, p.name as nama_brg, ml.c_uom_id, u.name as kemasan, ml.qtydelivered as order_unitx,
+	   ml.movementqty as order_unit, --jare Galih
+	   ml.qty as order_dospailx, ml.description as ket,
+	   ml.movementqty/ml.dividerate as order_dospail,
+	   FLOOR(ml.qtyonhand/ml.dividerate) as curr_saldo,
+	   FLOOR(ml.avgsalesqty/ml.dividerate) as rata_jualx,
+	   (ml.avgsalesqty/ml.dividerate) as rata_jual,
 	   CASE
 	   	WHEN ml.c_uom_id<>p.c_uom_id THEN round(ml.qty*(SELECT uc.dividerate FROM c_uom_conversion uc WHERE uc.m_product_id=ml.m_product_id)) --satuan besar
 		ELSE ml.qty --satuan kecil
@@ -25,7 +29,8 @@ FROM TDI_BranchRequest m
 INNER JOIN TDI_BranchRequest_Line ml ON ml.TDI_BranchRequest_id=m.TDI_BranchRequest_id
 INNER JOIN m_product p ON p.m_product_id=ml.m_product_id
 INNER JOIN c_uom u ON u.c_uom_id=ml.c_uom_id
-WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
+WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}
+ORDER BY p.name --ml.line]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="documentno" class="java.lang.String"/>
@@ -35,10 +40,14 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 	<field name="nama_brg" class="java.lang.String"/>
 	<field name="c_uom_id" class="java.math.BigDecimal"/>
 	<field name="kemasan" class="java.lang.String"/>
+	<field name="order_unitx" class="java.math.BigDecimal"/>
 	<field name="order_unit" class="java.math.BigDecimal"/>
+	<field name="order_dospailx" class="java.math.BigDecimal"/>
+	<field name="ket" class="java.lang.String"/>
 	<field name="order_dospail" class="java.math.BigDecimal"/>
-	<field name="qtyonhand" class="java.math.BigDecimal"/>
-	<field name="avgqtyinvoiced" class="java.math.BigDecimal"/>
+	<field name="curr_saldo" class="java.math.BigDecimal"/>
+	<field name="rata_jualx" class="java.math.BigDecimal"/>
+	<field name="rata_jual" class="java.math.BigDecimal"/>
 	<field name="xsat" class="java.math.BigDecimal"/>
 	<field name="weight" class="java.math.BigDecimal"/>
 	<field name="bruto_weight" class="java.math.BigDecimal"/>
@@ -65,7 +74,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="1" y="31" width="277" height="57" uuid="34bf1b8e-d081-4c3a-a907-ac7c04c28c4d"/>
+				<reportElement x="1" y="31" width="288" height="57" uuid="34bf1b8e-d081-4c3a-a907-ac7c04c28c4d"/>
 				<box topPadding="13" leftPadding="0" rightPadding="0">
 					<topPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
@@ -75,7 +84,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[PT. TUNGGAL DJAJA INDAH]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="84" y="57" width="115" height="20" uuid="3378edba-0831-4b5f-9c48-afe68482b4fc"/>
+				<reportElement x="85" y="57" width="115" height="20" uuid="3378edba-0831-4b5f-9c48-afe68482b4fc"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
@@ -89,7 +98,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[O R D E R]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="278" y="31" width="277" height="87" uuid="6960078d-6237-4155-a364-715b1fb12ce0"/>
+				<reportElement x="289" y="31" width="266" height="87" uuid="6960078d-6237-4155-a364-715b1fb12ce0"/>
 				<box topPadding="13" leftPadding="20" rightPadding="0">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -100,9 +109,9 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Kepada Yth.]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="455" y="6" width="100" height="23" uuid="78389aff-fb27-4935-bd3b-3021fb4796a8"/>
+				<reportElement x="426" y="6" width="129" height="23" uuid="78389aff-fb27-4935-bd3b-3021fb4796a8"/>
 				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA["NO: "+$F{poreference}]]></textFieldExpression>
+				<textFieldExpression><![CDATA["NO: "+$F{documentno}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy">
 				<reportElement x="199" y="94" width="79" height="20" uuid="a3e998f3-d6b1-43a0-96cd-5acb8154fa0e"/>
@@ -137,7 +146,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Item]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="99" y="118" width="166" height="35" uuid="28fa2f60-5d32-4890-a8c1-cb179fae3931"/>
+				<reportElement x="99" y="118" width="190" height="35" uuid="28fa2f60-5d32-4890-a8c1-cb179fae3931"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -148,7 +157,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Nama Barang]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="265" y="118" width="48" height="35" uuid="2cf6b01b-1f22-44de-ac69-2669c95ebc83"/>
+				<reportElement x="289" y="118" width="48" height="35" uuid="2cf6b01b-1f22-44de-ac69-2669c95ebc83"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -159,7 +168,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Kemasan]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="313" y="118" width="78" height="16" uuid="4180feb2-0d84-49b9-9cf5-236edde53e1d"/>
+				<reportElement x="337" y="118" width="78" height="16" uuid="4180feb2-0d84-49b9-9cf5-236edde53e1d"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -170,7 +179,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Order]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="313" y="134" width="37" height="19" uuid="91aa4e18-e21e-4ca1-b30d-6163f2c11b76"/>
+				<reportElement x="337" y="134" width="37" height="19" uuid="91aa4e18-e21e-4ca1-b30d-6163f2c11b76"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -181,7 +190,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Unit]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="350" y="134" width="41" height="19" uuid="651986de-74a5-4f39-b0c1-051c1cfa0a03"/>
+				<reportElement x="374" y="134" width="41" height="19" uuid="651986de-74a5-4f39-b0c1-051c1cfa0a03"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -194,7 +203,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Dos/Pail]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="392" y="118" width="78" height="16" uuid="c68efcdd-9fc7-4686-998d-b193e78f7f6d"/>
+				<reportElement x="416" y="118" width="78" height="16" uuid="c68efcdd-9fc7-4686-998d-b193e78f7f6d"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -205,7 +214,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Dos/Pail]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="430" y="134" width="40" height="19" uuid="b0e8ad42-77f4-48e5-95d7-a7e96a788963"/>
+				<reportElement x="454" y="134" width="40" height="19" uuid="b0e8ad42-77f4-48e5-95d7-a7e96a788963"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -218,7 +227,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Rata-2]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="392" y="134" width="37" height="19" uuid="8ee6630a-f344-4216-82a2-e259af9ca2d4"/>
+				<reportElement x="416" y="134" width="37" height="19" uuid="8ee6630a-f344-4216-82a2-e259af9ca2d4"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -240,7 +249,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Item]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="470" y="118" width="85" height="35" uuid="2ab21d7e-4e32-4c86-b91a-9a3ba917d671"/>
+				<reportElement x="493" y="118" width="62" height="35" uuid="2ab21d7e-4e32-4c86-b91a-9a3ba917d671"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -285,17 +294,19 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="99" y="0" width="166" height="20" uuid="0147fa6c-d57f-4620-8de9-0d0f1d0e8521"/>
-				<box leftPadding="5">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="99" y="0" width="190" height="20" uuid="0147fa6c-d57f-4620-8de9-0d0f1d0e8521"/>
+				<box leftPadding="3">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement verticalAlignment="Middle"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{nama_brg}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="265" y="0" width="48" height="20" uuid="2ab56893-7975-4051-a1ad-0e1d7ead9e43"/>
+				<reportElement x="289" y="0" width="48" height="20" uuid="2ab56893-7975-4051-a1ad-0e1d7ead9e43"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -303,50 +314,53 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{kemasan}]]></textFieldExpression>
 			</textField>
-			<textField pattern="###0">
-				<reportElement x="313" y="0" width="37" height="20" uuid="4edc5d28-71ec-4ac9-b563-c14a909bb524"/>
+			<textField pattern="#,##0">
+				<reportElement x="337" y="0" width="37" height="20" uuid="4edc5d28-71ec-4ac9-b563-c14a909bb524"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{order_unit}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{order_unit} == null ? "0" : $F{order_unit}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="350" y="0" width="41" height="20" uuid="5f317192-cc98-4dba-b4dd-db1cfc97552f"/>
+			<textField pattern="#,##0">
+				<reportElement x="374" y="0" width="41" height="20" uuid="5f317192-cc98-4dba-b4dd-db1cfc97552f"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{order_dospail}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{order_dospail} == null ? "0" : $F{order_dospail}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="392" y="0" width="37" height="20" uuid="230df2f2-5651-46a4-892d-b771f35b8b0a"/>
+			<textField pattern="#,##0">
+				<reportElement x="416" y="0" width="37" height="20" uuid="230df2f2-5651-46a4-892d-b771f35b8b0a"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{qtyonhand}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{curr_saldo} == null ? "0" : $F{curr_saldo}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="430" y="0" width="40" height="20" uuid="d7694d8c-1482-46dc-af75-3139a9e00db6"/>
+			<textField pattern="#,##0">
+				<reportElement x="454" y="0" width="40" height="20" uuid="d7694d8c-1482-46dc-af75-3139a9e00db6"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{avgqtyinvoiced}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{rata_jual} == null ? "0" : $F{rata_jual}]]></textFieldExpression>
 			</textField>
-			<staticText>
-				<reportElement x="470" y="0" width="85" height="20" uuid="2f27d64a-e88c-42de-a4d1-6d08e819deec"/>
-				<box>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement x="495" y="0" width="60" height="20" uuid="2e27c44e-977a-4c54-b522-ecbb31590704"/>
+				<box leftPadding="2" rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<text><![CDATA[]]></text>
-			</staticText>
+				<textElement verticalAlignment="Middle">
+					<font size="6"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ket}]]></textFieldExpression>
+			</textField>
 		</band>
 	</detail>
 	<columnFooter>

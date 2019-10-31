@@ -2,7 +2,7 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="208"/>
+	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
@@ -11,7 +11,7 @@
 SELECT row_number() over() as row_no,
 	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon,
        bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
-	   bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
+	   bp.name as bp_name, l.address1 as bp_address, upper(sd.name) as bp_subdist, l.isprinted, c.name as bp_city,
 	   bpl.name as locationname, uo.name as uomnamex,
              (SELECT u1.name FROM c_uom u1
               LEFT JOIN m_product p1 ON p1.c_uom_id=u1.c_uom_id
@@ -68,10 +68,19 @@ SELECT row_number() over() as row_no,
 	   (SELECT SUM(ol.weight) FROM c_invoiceline ol
               INNER JOIN c_invoice o ON o.c_invoice_id=ol.c_invoice_id
               WHERE o.c_invoice_id=$P{RECORD_ID}) as tonase,
-	  (i.dateinvoiced+pt.netdays) as duedate, bl.name as sts_wp,
+	  (i.dateinvoiced+pt.netdays) as duedate, bl.name as sts_wpx, --gak sido galih gk ngmong
+	  CASE
+	   WHEN bpl.iswp0='Y' THEN 'WP0'
+	   ELSE 'nope'
+	  END as sts_wp, --gw kasih CASE karena males ganti kondisi di jaspernya wkwkwk
 	  --(SELECT ir2. FROM tdi_invoicereturn ir2 WHERE ir2.c_invoice_id=i.c_invoice_id) as cn1
-	  (SELECT 'Kredit Memo: '||i2.documentno FROM c_invoice i2
-             WHERE c_invoice_id=ir.c_invoicereturn_id) as cn --dikasih CASE wp0=YES maka bla bla
+	  CASE
+	   WHEN bpl.iswp0='Y'
+               THEN (SELECT 'Kredit Memo: '||i2.documentno FROM c_invoice i2
+                     WHERE c_invoice_id=ir.c_invoicereturn_id)
+	   ELSE (SELECT 'Kredit Memo: '||i2.documentno FROM c_invoice i2
+                   WHERE c_invoice_id=ir.c_invoicereturnwp_id)
+	  END as cn --dikasih CASE wp0=YES maka bla bla
 FROM m_inout io
 INNER JOIN m_inoutline iol on iol.m_inout_id=io.m_inout_id
 INNER JOIN c_order o on o.c_order_id=io.c_order_id
@@ -84,6 +93,7 @@ INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
 INNER JOIN c_bpartner bp ON i.c_bpartner_id = bp.c_bpartner_id
 INNER JOIN c_bpartner_location bpl ON i.c_bpartner_location_id = bpl.c_bpartner_location_id
 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
+INNER JOIN tdi_subdistrict sd ON sd.tdi_subdistrict_id=l.tdi_subdistrict_id
 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
 INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
@@ -106,6 +116,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	<field name="bp_npwp_id" class="java.lang.String"/>
 	<field name="bp_name" class="java.lang.String"/>
 	<field name="bp_address" class="java.lang.String"/>
+	<field name="bp_subdist" class="java.lang.String"/>
 	<field name="isprinted" class="java.lang.String"/>
 	<field name="bp_city" class="java.lang.String"/>
 	<field name="locationname" class="java.lang.String"/>
@@ -124,6 +135,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	<field name="koli" class="java.math.BigDecimal"/>
 	<field name="tonase" class="java.math.BigDecimal"/>
 	<field name="duedate" class="java.sql.Date"/>
+	<field name="sts_wpx" class="java.lang.String"/>
 	<field name="sts_wp" class="java.lang.String"/>
 	<field name="cn" class="java.lang.String"/>
 	<variable name="harga_jual_1" class="java.math.BigDecimal" calculation="Sum">
@@ -229,11 +241,11 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":""+$F{bp_npwp_address}+""]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="54" y="66" width="150" height="10" uuid="5e47ddb3-fa1b-4a14-ba3e-a528a5b5afab"/>
+				<reportElement x="54" y="66" width="246" height="10" uuid="5e47ddb3-fa1b-4a14-ba3e-a528a5b5afab"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?" "+$F{bp_address}:""]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?" "+$F{bp_address}+" "+$F{bp_subdist}:""]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
 				<reportElement x="439" y="0" width="102" height="10" uuid="6e59d3b5-d546-4b9e-80ed-89a0ffffedf4"/>
@@ -334,7 +346,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 		<band height="37" splitType="Stretch"/>
 	</columnHeader>
 	<detail>
-		<band height="10" splitType="Stretch">
+		<band height="11" splitType="Stretch">
 			<textField>
 				<reportElement x="1" y="0" width="26" height="10" uuid="466d0ef5-92e4-4e7f-8b72-68c8398cbd4f"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
@@ -396,7 +408,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 	<pageFooter>
 		<band height="243" splitType="Stretch">
 			<textField pattern="dd/MM/yyyy">
-				<reportElement x="479" y="86" width="100" height="15" uuid="133eb7ac-3840-4813-9a3d-a6388fcae486"/>
+				<reportElement x="479" y="88" width="100" height="15" uuid="133eb7ac-3840-4813-9a3d-a6388fcae486"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
@@ -410,35 +422,35 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="493" y="42" width="100" height="20" uuid="b1c7ddeb-80f7-484f-8cbf-54b8807a3fd1"/>
+				<reportElement x="493" y="43" width="100" height="20" uuid="b1c7ddeb-80f7-484f-8cbf-54b8807a3fd1"/>
 				<textElement textAlignment="Right">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="204" y="42" width="56" height="10" uuid="824dfe3f-d5dc-4afa-9ac0-df10481802be"/>
+				<reportElement x="201" y="43" width="60" height="10" uuid="824dfe3f-d5dc-4afa-9ac0-df10481802be"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<text><![CDATA[KOLI/TONASE]]></text>
+				<text><![CDATA[KOLI/TONASE :]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="271" y="42" width="10" height="10" uuid="b9e2b8ad-60a3-41d4-8a95-a4c549f52305"/>
+				<reportElement x="271" y="43" width="10" height="10" uuid="b9e2b8ad-60a3-41d4-8a95-a4c549f52305"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<text><![CDATA[/]]></text>
 			</staticText>
 			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement x="281" y="42" width="31" height="10" uuid="53bbd142-416e-49cd-81b1-2f4770139a65"/>
+				<reportElement x="281" y="43" width="31" height="10" uuid="53bbd142-416e-49cd-81b1-2f4770139a65"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
 			</textField>
 			<textField pattern="###0" isBlankWhenNull="true">
-				<reportElement x="260" y="42" width="12" height="10" uuid="aa7129b0-46ed-4f43-946e-7cdee9fa95fc"/>
+				<reportElement x="260" y="43" width="12" height="10" uuid="aa7129b0-46ed-4f43-946e-7cdee9fa95fc"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>

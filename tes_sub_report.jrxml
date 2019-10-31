@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="tes_main_report" language="groovy" pageWidth="555" pageHeight="802" columnWidth="555" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="441813b4-85f9-4d4f-a9ae-29c678ef2f1b">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="RECORD_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select * from m_movement
+where m_movement_ID=$P{RECORD_ID}]]>
+	</queryString>
+	<field name="m_movement_id" class="java.math.BigDecimal"/>
+	<field name="ad_client_id" class="java.math.BigDecimal"/>
+	<field name="ad_org_id" class="java.math.BigDecimal"/>
+	<field name="isactive" class="java.lang.String"/>
+	<field name="created" class="java.sql.Timestamp"/>
+	<field name="createdby" class="java.math.BigDecimal"/>
+	<field name="updatedby" class="java.math.BigDecimal"/>
+	<field name="updated" class="java.sql.Timestamp"/>
+	<field name="documentno" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<field name="movementdate" class="java.sql.Timestamp"/>
+	<field name="posted" class="java.lang.String"/>
+	<field name="processed" class="java.lang.String"/>
+	<field name="processing" class="java.lang.String"/>
+	<field name="ad_orgtrx_id" class="java.math.BigDecimal"/>
+	<field name="c_project_id" class="java.math.BigDecimal"/>
+	<field name="c_campaign_id" class="java.math.BigDecimal"/>
+	<field name="c_activity_id" class="java.math.BigDecimal"/>
+	<field name="user1_id" class="java.math.BigDecimal"/>
+	<field name="user2_id" class="java.math.BigDecimal"/>
+	<field name="datereceived" class="java.sql.Timestamp"/>
+	<field name="docaction" class="java.lang.String"/>
+	<field name="docstatus" class="java.lang.String"/>
+	<field name="isintransit" class="java.lang.String"/>
+	<field name="c_doctype_id" class="java.math.BigDecimal"/>
+	<field name="isapproved" class="java.lang.String"/>
+	<field name="approvalamt" class="java.math.BigDecimal"/>
+	<field name="freightcostrule" class="java.lang.String"/>
+	<field name="m_shipper_id" class="java.math.BigDecimal"/>
+	<field name="priorityrule" class="java.lang.String"/>
+	<field name="salesrep_id" class="java.math.BigDecimal"/>
+	<field name="ad_user_id" class="java.math.BigDecimal"/>
+	<field name="c_bpartner_id" class="java.math.BigDecimal"/>
+	<field name="c_bpartner_location_id" class="java.math.BigDecimal"/>
+	<field name="c_charge_id" class="java.math.BigDecimal"/>
+	<field name="chargeamt" class="java.math.BigDecimal"/>
+	<field name="createfrom" class="java.lang.String"/>
+	<field name="dd_order_id" class="java.math.BigDecimal"/>
+	<field name="deliveryrule" class="java.lang.String"/>
+	<field name="deliveryviarule" class="java.lang.String"/>
+	<field name="freightamt" class="java.math.BigDecimal"/>
+	<field name="reversal_id" class="java.math.BigDecimal"/>
+	<field name="poreference" class="java.lang.String"/>
+	<field name="processedon" class="java.math.BigDecimal"/>
+	<field name="m_movement_uu" class="java.lang.String"/>
+	<field name="isapprovedbm" class="java.lang.String"/>
+	<field name="m_movementrequest_id" class="java.math.BigDecimal"/>
+	<field name="m_inout_id" class="java.math.BigDecimal"/>
+	<field name="isreceived" class="java.lang.String"/>
+	<field name="inventorymovetype" class="java.lang.String"/>
+	<field name="isgenerated" class="java.lang.String"/>
+	<field name="returnno" class="java.lang.String"/>
+	<field name="ismovementshipment" class="java.lang.String"/>
+	<field name="generateline" class="java.lang.String"/>
+	<field name="updatelocator" class="java.lang.String"/>
+	<field name="reasonreversed" class="java.lang.String"/>
+	<field name="isgeneratedline" class="java.lang.String"/>
+	<field name="isupdatedlocator" class="java.lang.String"/>
+	<field name="m_locator_id" class="java.math.BigDecimal"/>
+	<field name="m_locatorto_id" class="java.math.BigDecimal"/>
+	<field name="shipdate" class="java.sql.Timestamp"/>
+	<field name="generatelineforrequest" class="java.lang.String"/>
+	<field name="maxconstantsrequest" class="java.math.BigDecimal"/>
+	<field name="printrencanakirim" class="java.lang.String"/>
+	<field name="basedon" class="java.lang.String"/>
+	<field name="enddate" class="java.sql.Timestamp"/>
+	<field name="startdate" class="java.sql.Timestamp"/>
+	<field name="sorting" class="java.lang.String"/>
+	<field name="m_warehouse_id" class="java.math.BigDecimal"/>
+	<field name="tdi_vehicle_id" class="java.math.BigDecimal"/>
+	<field name="isreward" class="java.lang.String"/>
+	<field name="nobranchshipment" class="java.lang.String"/>
+	<field name="tdi_branchrequest_id" class="java.math.BigDecimal"/>
+	<field name="printsjtobranch" class="java.lang.String"/>
+	<field name="m_branchshipment_id" class="java.math.BigDecimal"/>
+	<field name="isbranchshipment" class="java.lang.String"/>
+	<field name="isbranchreceipt" class="java.lang.String"/>
+	<field name="isshipmentcompleted" class="java.lang.String"/>
+	<field name="istobereversed" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="28" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="8" width="100" height="20" uuid="90e732f6-25a5-49ec-9992-1363eb26185a"/>
+				<textElement verticalAlignment="Middle"/>
+				<text><![CDATA[Sub Report]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement x="2" y="0" width="100" height="20" uuid="fe8c09a1-53a3-4f39-8960-117865935eb5"/>
+				<text><![CDATA[documentno]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="0" width="100" height="20" uuid="25cd4405-8c2f-41b7-a105-2d18ea980341"/>
+				<text><![CDATA[movementdate]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="2" y="0" width="100" height="20" uuid="8cd0d376-48b6-465c-8fa0-4807246c28f8"/>
+				<textFieldExpression><![CDATA[$F{documentno}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="0" width="100" height="20" uuid="49626cbf-a2bb-4b76-9dba-4ff648011c12"/>
+				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>
