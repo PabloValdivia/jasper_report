@@ -37,7 +37,7 @@
 	 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
 	 INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
 	 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
-	 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+	 LEFT JOIN c_city c ON l.c_city_id = c.c_city_id
 	 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 	 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
 	 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
@@ -52,13 +52,18 @@ INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
 INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
-INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+LEFT JOIN c_city c ON l.c_city_id = c.c_city_id
 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
+WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E'
+--cek jika product ada Conversionnya maka cek field isShowinProductInfo
+AND CASE
+    	WHEN uc.m_product_id is null THEN TRUE
+    	ELSE uc.isshowinproductinfo='Y'
+    END]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="mv_docno" class="java.lang.String"/>
@@ -107,7 +112,7 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<text><![CDATA[RENCANA KIRIM]]></text>
 			</staticText>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="116" y="0" width="37" height="14" uuid="0d0a55bc-3544-42c4-9dd6-7ccf5784a6c4"/>
 				<textElement textAlignment="Center">
 					<font fontName="Arial" size="12" isBold="true"/>
@@ -132,28 +137,28 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<text><![CDATA[KET.]]></text>
 			</staticText>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="53" y="21" width="100" height="12" uuid="bd68064a-4a78-4920-b676-062add654eef"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{doc_corder}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="153" y="16" width="103" height="24" uuid="83b4d5e2-1b86-4156-8b6a-11cc03111fd7"/>
 				<textElement verticalAlignment="Top">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{bp_address}]]></textFieldExpression>
 			</textField>
-			<textField pattern="dd/MM/yyyy">
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
 				<reportElement x="52" y="32" width="73" height="12" uuid="5373cad2-4a4e-4470-bb17-7e7976d308de"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{dateordered}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="153" y="0" width="103" height="17" uuid="f2422a8b-a10d-47d7-8b9f-c99833dc6281"/>
 				<textElement verticalAlignment="Top">
 					<font fontName="Arial" size="10"/>
@@ -188,14 +193,14 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<text><![CDATA[TGL]]></text>
 			</staticText>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="153" y="39" width="87" height="12" uuid="cd64a063-cf24-4137-b004-95e3423cc1d7"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{bp_city}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="52" y="0" width="101" height="12" uuid="704bb847-605e-4a24-8a76-93c4639b9851"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
@@ -216,7 +221,7 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<text><![CDATA[:]]></text>
 			</staticText>
-			<textField pattern="dd/MM/yyyy">
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
 				<reportElement x="52" y="11" width="84" height="12" uuid="1a5c279f-ed28-4bf4-b782-292b5129188b"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
@@ -244,28 +249,28 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	</pageHeader>
 	<detail>
 		<band height="43">
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="1" y="0" width="19" height="14" uuid="26e0f003-72c8-4811-bbae-7746bcfc37d4"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement mode="Opaque" x="20" y="0" width="236" height="29" uuid="ca4d35a3-52a6-4be7-9b64-8d501217e456"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{productname}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="209" y="29" width="47" height="12" uuid="f4065f64-cd2b-4239-ab61-b30ed145089f"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA['- '+$F{uomname_order}]]></textFieldExpression>
 			</textField>
-			<textField pattern="#,##0">
+			<textField pattern="#,##0" isBlankWhenNull="true">
 				<reportElement x="186" y="29" width="21" height="12" uuid="1dacaa11-13b0-4086-8556-3d9f9d13f8a6"/>
 				<textElement textAlignment="Right">
 					<font fontName="Arial" size="10"/>
@@ -282,21 +287,7 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="24" splitType="Stretch">
-			<textField pattern="#,##0.00">
-				<reportElement x="86" y="12" width="52" height="12" uuid="a4deae02-737c-4b44-b93d-ba0dcf24588b"/>
-				<textElement>
-					<font fontName="Arial" size="10"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
-			</textField>
-			<staticText>
-				<reportElement x="2" y="12" width="83" height="12" uuid="c3eefbc5-3847-40e1-8ff9-f6b90589c16b"/>
-				<textElement>
-					<font fontName="Arial" size="10"/>
-				</textElement>
-				<text><![CDATA[TOTAL TONASE :]]></text>
-			</staticText>
+		<band height="16" splitType="Stretch">
 			<line>
 				<reportElement x="0" y="3" width="183" height="1" uuid="6cea0107-56f2-4113-9cc7-aa1a7a98ebf3"/>
 			</line>
@@ -307,20 +298,38 @@ WHERE mv.m_movement_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<textFieldExpression><![CDATA["FORM-GJ-001 / rev.00"]]></textFieldExpression>
 			</textField>
-			<textField pattern="#,##0">
-				<reportElement x="190" y="12" width="52" height="12" uuid="30f3c850-b78e-46ee-b5df-d651283981a3"/>
+		</band>
+	</columnFooter>
+	<lastPageFooter>
+		<band height="12">
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="86" y="0" width="52" height="12" uuid="a4deae02-737c-4b44-b93d-ba0dcf24588b"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tonase}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="2" y="0" width="83" height="12" uuid="c3eefbc5-3847-40e1-8ff9-f6b90589c16b"/>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<text><![CDATA[TOTAL TONASE :]]></text>
+			</staticText>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement x="205" y="0" width="52" height="12" uuid="30f3c850-b78e-46ee-b5df-d651283981a3"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="147" y="12" width="45" height="12" uuid="9c58e7ed-d7eb-4eb9-b1bf-70e3624f794f"/>
+				<reportElement x="147" y="0" width="45" height="12" uuid="9c58e7ed-d7eb-4eb9-b1bf-70e3624f794f"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<text><![CDATA[TOTAL :]]></text>
 			</staticText>
 		</band>
-	</columnFooter>
+	</lastPageFooter>
 </jasperReport>

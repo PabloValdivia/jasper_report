@@ -7,15 +7,16 @@
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
 	<queryString>
-		<![CDATA[SELECT row_number() over() as row_no,
-	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, o.dateordered, o.poreference, sr.name as rayon,
+		<![CDATA[SELECT row_number() over(ORDER BY p.name) as row_no,
+	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, o.dateordered, o.poreference, --poreference gak digawe jare bu hary
+io.nomorpo, sr.name as rayon,
     bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
-	bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
-	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, 	p.description as productnamex, --productnamex gk dipake
+	bp.name as bp_name, l.address1 as bp_address, l.isprinted, UPPER(c.name) as bp_city,
+	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, 	p.name as productnamex,  --productnamex gk dipake
 	CASE
 		WHEN iol.c_uom_id=uc.c_uom_to_id THEN p.description
 		ELSE p.name
-	END as productname,
+	END as productname, --dulu description skrg name
 	(SELECT SUM(qtyentered /
 		case
 			when (iol.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
@@ -54,7 +55,8 @@ INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<>'E']]>
+WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<>'E'
+ORDER BY productname]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
@@ -65,6 +67,7 @@ WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<
 	<field name="doc_corder" class="java.lang.String"/>
 	<field name="dateordered" class="java.sql.Timestamp"/>
 	<field name="poreference" class="java.lang.String"/>
+	<field name="nomorpo" class="java.lang.String"/>
 	<field name="rayon" class="java.lang.String"/>
 	<field name="name2" class="java.lang.String"/>
 	<field name="bp_npwp_name" class="java.lang.String"/>
@@ -136,7 +139,7 @@ WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<
 				<textElement>
 					<font fontName="Arial" size="9" isStrikeThrough="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{poreference}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{nomorpo}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="7" y="79" width="47" height="11" uuid="514a6dca-a8d2-4dde-bbe3-9dbe5a01d9b0"/>
@@ -300,6 +303,27 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<text><![CDATA[PREVIEW]]></text>
 			</staticText>
+			<textField>
+				<reportElement x="53" y="69" width="12" height="11" uuid="c186d290-68fa-4abb-869d-ed2a4e4b3802"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=="Y"?":":" "]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="53" y="59" width="12" height="11" uuid="ad37c0b8-a04a-430e-be6b-00d954b6439c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=="Y"?":":" "]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="53" y="79" width="12" height="11" uuid="65e80b55-263a-41a6-81fb-8e2c07249fc5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=="Y"?":":" "]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
@@ -328,7 +352,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 			<textField>
 				<reportElement x="110" y="2" width="329" height="11" uuid="020ad8d4-6966-40f9-a381-a54e720fe3e5"/>
 				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="9"/>
+					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{productname}]]></textFieldExpression>
@@ -372,11 +396,11 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="244" y="7" width="63" height="11" uuid="640250dd-c3d2-402f-bacf-c9b945a7891e"/>
+				<reportElement x="236" y="7" width="71" height="11" uuid="640250dd-c3d2-402f-bacf-c9b945a7891e"/>
 				<textElement>
 					<font fontName="Arial" size="9"/>
 				</textElement>
-				<text><![CDATA[KOLI/TONASE]]></text>
+				<text><![CDATA[KOLI/TONASE :]]></text>
 			</staticText>
 			<textField pattern="#,##0.00">
 				<reportElement x="328" y="7" width="33" height="11" uuid="bc155e3d-3033-4e9c-9ac0-6777aed655f5"/>
@@ -390,7 +414,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textElement>
 					<font fontName="Arial" size="9"/>
 				</textElement>
-				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="407" y="34" width="36" height="15" uuid="01fd43b8-50bd-4745-95fb-0ce03f873491"/>

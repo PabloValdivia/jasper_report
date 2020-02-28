@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="LapPerongkosanK" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="fb5b0a92-898b-41a1-92e1-e907fae59fad">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="LapPerongkosanK" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="5" bottomMargin="8" isFloatColumnFooter="true" uuid="fb5b0a92-898b-41a1-92e1-e907fae59fad">
 	<property name="ireport.zoom" value="1.0"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -29,6 +29,15 @@
 	<parameter name="jns_lap" class="java.lang.String">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
+	<parameter name="C_Period_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="tgl_print" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="AD_Org_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[--Detil Transaksi Kas Keluar September
 SELECT *,
@@ -37,152 +46,295 @@ SELECT *,
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
-	WHERE p.datetrx BETWEEN '2019-09-01' AND $P{DateTrx}  --Sementara tanggal awal bulan manual sek
-	AND p.c_bankaccount_id=1000003
+	WHERE p.datetrx >= (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+	AND p.datetrx < $P{DateTrx} --maunya pakai date '2011-11-03' - interval '1 day' tapi gak bisa
+	AND p.c_bankaccount_id IN (
+		(SELECT tdi_getbaid($P{AD_Org_ID}, 1)), --1000003 ID KAS Kecil Madiun
+		(SELECT tdi_getbaid($P{AD_Org_ID}, 2))  --1000012 ID BON sementara yg jadi Biaya Salesman
+	)
+	AND p.c_charge_id<>1000063 --Bon Sementara tidak dihitung
 	AND p.isreceipt='N'
-) as pengeluaran_lalu
+) as pengeluaran_lalu,
+(SELECT TRIM(REPLACE(o.name, 'TDI', '')) as nama_cab --melepas TDI : TDI MADIUN menjadi MADIUN
+		FROM ad_org o
+		WHERE o.ad_org_id=$P{AD_Org_ID}) as nama_org,
+       (SELECT tdi_getnamebyjob_id(1000000, $P{AD_Org_ID})) as admin_A,
+       (SELECT tdi_getnamebyjob_id(1000006, $P{AD_Org_ID})) as admin_B,
+       (SELECT tdi_getnamebyjob_id(1000005, $P{AD_Org_ID})) as admin_C,
+       (SELECT tdi_getnamebyjob_id(1000002, $P{AD_Org_ID})) as bm
 FROM (
 	SELECT null as row_no, null as bankacc_id, 'BIAYA OPERASIONAL UTAMA' as name, SUM(p.payamt) as sub_total, null as total,
-	       'A' as chargegroup, -1 as flag
+	       'A' as chargegroup, null as sequenceno, -1 as flag
 	FROM c_payment p
 	WHERE p.payamt is null
 UNION ALL
-	SELECT row_number() over() as row_no, ba.c_bankaccount_id, c.name,
-		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, 0 as flag
+	SELECT row_number() over(ORDER BY c.sequenceno) as row_no, ba.c_bankaccount_id, c.name,
+		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, c.sequenceno, 0 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 KAS KECIL
 	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='A'
-	GROUP BY ba.c_bankaccount_id, c.name, c.chargegroup
+	GROUP BY ba.c_bankaccount_id, c.name, c.chargegroup, c.sequenceno
 	--ORDER BY c.chargegroup, ba.c_bankaccount_id, p.isreceipt desc
 UNION ALL
-	SELECT null, null, 'TOTAL BIAYA OPERASIONAL UTAMA', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, 1 as flag
+	SELECT null, null, 'TOTAL BIAYA OPERASIONAL UTAMA', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, null, 1 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 KAS KECIL
 	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='A'
 	GROUP BY c.chargegroup
 UNION ALL
-	SELECT null, null, 'BIAYA UMUM', null, SUM(p.payamt), 'B' as chargegroup, 0 as flag
+	SELECT null, null, 'BIAYA UMUM', null, SUM(p.payamt), 'B' as chargegroup, null, 0 as flag
+	FROM c_payment p
+	WHERE p.payamt is null
+UNION ALL
+	SELECT row_number() over(ORDER BY c.sequenceno) as row_no, ba.c_bankaccount_id, c.name,
+		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, c.sequenceno, 2 as flag
+	FROM c_payment p
+	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 KAS KECIL
+	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='B'
+	GROUP BY ba.c_bankaccount_id, c.name, c.chargegroup, c.sequenceno
+UNION ALL
+	SELECT null, null, 'TOTAL BIAYA UMUM', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, null, 3 as flag
+	FROM c_payment p
+	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 KAS KECIL
+	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='B'
+	GROUP BY c.chargegroup
+UNION ALL
+	SELECT null, null, 'BIAYA LAIN-LAIN', null, SUM(p.payamt), 'C' as chargegroup, null, 0 as flag
 	FROM c_payment p
 	WHERE p.payamt is null
 UNION ALL
 	SELECT row_number() over() as row_no, ba.c_bankaccount_id, c.name,
-		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, 2 as flag
+		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, c.sequenceno, 4 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
-	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='B'
-	GROUP BY ba.c_bankaccount_id, c.name, c.chargegroup
-UNION ALL
-	SELECT null, null, 'TOTAL BIAYA UMUM', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, 3 as flag
-	FROM c_payment p
-	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
-	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
-	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
-	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='B'
-	GROUP BY c.chargegroup
-UNION ALL
-	SELECT null, null, 'BIAYA LAIN-LAIN', null, SUM(p.payamt), 'C' as chargegroup, 0 as flag
-	FROM c_payment p
-	WHERE p.payamt is null
-UNION ALL
-	SELECT row_number() over() as row_no, ba.c_bankaccount_id, c.name,
-		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, 4 as flag
-	FROM c_payment p
-	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
-	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
-	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 KAS KECIL
 	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='C'
-	GROUP BY ba.c_bankaccount_id, c.name, c.chargegroup
+	GROUP BY ba.c_bankaccount_id, c.name, c.chargegroup, c.sequenceno
 UNION ALL
-	SELECT null, null, 'TOTAL BIAYA UMUM & LAIN-LAIN', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, 5 as flag
+	SELECT null, null, 'TOTAL BIAYA UMUM & LAIN-LAIN', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, null, 5 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 KAS KECIL
 	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='C'
 	GROUP BY c.chargegroup
 UNION ALL
-	SELECT null, null, 'BIAYA SALESMAN, SC, & BM', null, SUM(p.payamt), 'D' as chargegroup, 0 as flag
+	SELECT null, null, 'BIAYA SALESMAN, SC, & BM', null, SUM(p.payamt), 'D' as chargegroup, null, 0 as flag
 	FROM c_payment p
 	WHERE p.payamt is null
 UNION ALL
-	SELECT row_number() over() as row_no, ba.c_bankaccount_id, 'SALESMAN-'||u.name,
-		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, 4 as flag
+	SELECT row_number() over() as row_no, ba.c_bankaccount_id,
+		   CASE
+	        	    WHEN u.ad_user_id=(SELECT tdi_getbmid($P{AD_Org_ID})) THEN 'BRANCH MANAGER-'||u.name
+	        	    WHEN SUBSTRING(u.value, 1, 2)='sc' THEN 'SC-'||u.name
+	        	    ELSE 'SALESMAN-'||u.name
+                 	   END as name,
+		   SUM(p.payamt) as sub_total, 0 as total, c.chargegroup, c.sequenceno, 4 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	INNER JOIN ad_user u ON u.ad_user_id=p.salesrep_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000012 --ID untuk Bon Sementara
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 2)) --1000012 Bon Sementara Madiun yang menjadi Biaya Salesman
 	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='D'
-	GROUP BY ba.c_bankaccount_id, u.name, c.chargegroup
+	GROUP BY ba.c_bankaccount_id, u.ad_user_id, u.name, c.chargegroup, c.sequenceno
 UNION ALL
-	SELECT null, null, 'TOTAL BIAYA SALESMAN, SC & BM', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, 5 as flag
+	SELECT null, null, 'TOTAL BIAYA SALESMAN, SC & BM', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, null, 5 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000012 --ID untuk Bon Sementara
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 2)) --1000012 Bon Sementara Madiun yang menjadi Biaya Salesman
 	AND p.isreceipt='N' AND c.chargegroup is not null AND c.chargegroup='D'
 	GROUP BY c.chargegroup
 UNION ALL
-	SELECT null, null, 'TOTAL BIAYA '|| $P{jns_lap}, 0 as sub_total, SUM(p.payamt) as total, 'D', 6 as flag
+	SELECT null, null, 'TOTAL BIAYA '||
+	       CASE
+		WHEN $P{jns_lap}='K4' THEN 'K1-4'
+		ELSE $P{jns_lap}
+	       END, 0 as sub_total, SUM(p.payamt) as total, 'D', null, 6 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id IN (1000003, 1000012) --ID 1000012 untuk Bon Sementara
+	AND p.c_bankaccount_id IN (
+		(SELECT tdi_getbaid($P{AD_Org_ID}, 1)), --1000003 ID KAS Kecil Madiun
+		(SELECT tdi_getbaid($P{AD_Org_ID}, 2))  --1000012 ID BON sementara yg jadi Biaya Salesman
+	)
 	AND p.isreceipt='N' AND c.chargegroup is not null
 UNION ALL
-	SELECT null, null, 'BON SEMENTARA', SUM(p.payamt), null, 'E' as chargegroup, 0 as flag
+	SELECT null, null,
+	       'BON SEMENTARA',
+	       SUM(p.payamt), null,
+	       'E' as chargegroup, null, 0 as flag
+	--SELECT null, null, null, null, null, null as chargegroup, null, 0 as flag
 	FROM c_payment p
 	WHERE p.payamt is null
 UNION ALL
-	SELECT row_number() over(order by u.name) as row_no, null,
+	-- Ini untuk sementara saja, klo sudah full Pak Ferry baru dihapus
+	-- Perhitungan Bon Sementara Kacab Cadangan dihitung dari awal minggu
+		  SELECT row_number() over(order by
+	       		CASE
+	        	  	 WHEN u1.ad_user_id IN
+		      	 ((SELECT tdi_getbmid($P{AD_Org_ID}))+1, (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+		  	 THEN 'BRANCH MANAGER-'||u1.name
+	        	  	 ELSE 'SALESMAN-'||u1.name
+                 		END
+	       		) as row_no, null,
+		         CASE
+	        		WHEN u1.ad_user_id IN
+		      	((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+	        		THEN 'BRANCH MANAGER-'||u1.name
+	        		WHEN SUBSTRING(u1.value, 1, 2)='sc' THEN 'SC-'||u1.name
+	        		ELSE 'SALESMAN-'||u1.name
+                 	         END as name,
+		         SUM(p1.payamt), null,
+		         'E', null, 7 as flag
+		  FROM c_payment p1
+		  INNER JOIN ad_user u1 ON u1.ad_user_id=p1.salesrep_id
+		  WHERE p1.datetrx BETWEEN (SELECT startdate FROM c_period
+				        WHERE c_period_id=$P{C_Period_ID})
+		  AND $P{DateTrx2}
+		  AND p1.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1))
+		  --1000003 ID KAS Kecil Madiun
+		  AND p1.isreceipt='N'
+		  AND p1.c_charge_id=1000063 --Charge bon sementara
+		  AND u1.ad_user_id IN
+		      ((SELECT tdi_getbmcadid($P{AD_Org_ID})))
+		       --ID nya BM Madiun (Pak Eko) dan BM pengganti (Pak Bambang)
+		 -- End of Perhitungan Bon Sementara
+		  GROUP BY u1.ad_user_id, u1.name
+	-- End of Perhitungan Bon Sementara Kacab Cadangan dihitung dari awal minggu
+UNION ALL
+	SELECT row_number() over(order by
+	       	CASE
+	        	  WHEN u.ad_user_id IN
+		      ((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+		  THEN 'BRANCH MANAGER-'||u.name
+	        	  ELSE 'SALESMAN-'||u.name
+                 	END
+	       )+1 as row_no, null,
 	       CASE
-	        WHEN u.ad_user_id=1002666 THEN 'BRANCH MANAGER-'||u.name
+	        WHEN u.ad_user_id IN
+		      ((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+	        THEN 'BRANCH MANAGER-'||u.name
+	        WHEN SUBSTRING(u.value, 1, 2)='sc' THEN 'SC-'||u.name
 	        ELSE 'SALESMAN-'||u.name
                  END as name,
-		   SUM(p.payamt) as sub_total, 0 as total, 'E', 7 as flag
+	       --perongkosan branch manager dihitung dari minggu pertama
+	       CASE
+	        WHEN u.ad_user_id IN
+		      ((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+	        THEN (
+		 -- Perhitungan Bon Sementara Kacab dihitung dari awal minggu
+		  SELECT sum(p1.payamt)
+		  FROM c_payment p1
+		  INNER JOIN ad_user u1 ON u1.ad_user_id=p1.salesrep_id
+		  WHERE p1.datetrx BETWEEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+		  AND $P{DateTrx2}
+		  AND p1.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID KAS Kecil Madiun
+		  AND p1.isreceipt='N'
+		  AND p1.c_charge_id=1000063 --Charge bon sementara
+		  AND u1.ad_user_id IN
+		      (tdi_getbmid($P{AD_Org_ID}))
+		       --ID nya BM Madiun (Pak Eko) dan BM pengganti (Pak Bambang)
+		 -- End of Perhitungan Bon Sementara
+		)
+	        ELSE SUM(p.payamt)
+                 END as sub_total,
+	       0 as total, 'E', c.sequenceno, 7 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	INNER JOIN ad_user u ON u.ad_user_id=p.salesrep_id
-	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
+	WHERE p.datetrx
+	BETWEEN CASE
+		WHEN $P{jns_lap}='K1' AND $P{jns_lap}='K12'
+	         	THEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+		ELSE $P{DateTrx}
+	        END
+	AND $P{DateTrx2}
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID KAS Kecil Madiun
 	AND p.isreceipt='N'
 	--AND c.chargegroup is not null
 	--AND c.chargegroup='D' tidak dipakai karena chargegroup NULL diubah sama galih
 	AND p.c_charge_id=1000063
-	--Tampilkan jika jenis laporan = 'K1' dan selalu tampilkan Bon BM
-	AND ($P{jns_lap} = 'K1' OR u.ad_user_id=1002666) --ID nya BM Madiun (Pak Eko)
-	GROUP BY u.ad_user_id, u.name, c.chargegroup
+	--Tampilkan jika jenis laporan = 'K1'/'K3' dan selalu tampilkan Bon BM
+	AND ($P{jns_lap} IN ('K1', 'K3') OR
+	     CASE
+		WHEN $P{jns_lap}='K4' THEN u.ad_user_id=0
+	     	ELSE u.ad_user_id IN
+		     ((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+	     END) --ID nya BM Madiun (Pak Eko)
+	GROUP BY u.ad_user_id, u.name, c.chargegroup, c.sequenceno
 UNION ALL
-	SELECT null, null, 'TOTAL BON SEMENTARA', 0 as sub_total, SUM(p.payamt) as total, c.chargegroup, 8 as flag
+	SELECT null, null, 'TOTAL BON SEMENTARA', 0 as sub_total,
+	       CASE
+		WHEN $P{jns_lap} IN ('K1', 'K3') THEN SUM(p.payamt)
+		ELSE 0
+	       END +
+		 (
+		 -- Perhitungan Bon Sementara Kacab dihitung dari awal minggu
+		  SELECT
+			CASE
+			 WHEN ($P{jns_lap}='K3') THEN sum(p1.payamt)
+			 ELSE sum(p1.payamt)
+			END
+		  FROM c_payment p1
+		  INNER JOIN ad_user u1 ON u1.ad_user_id=p1.salesrep_id
+		  WHERE p1.datetrx BETWEEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+		  AND $P{DateTrx2}
+		  AND p1.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID KAS Kecil Madiun
+		  AND p1.isreceipt='N'
+		  AND p1.c_charge_id=1000063 --Charge bon sementara
+		  AND u1.ad_user_id IN
+		      ((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+		 -- End of Perhitungan Bon Sementara
+		)
+	       as total, --Bon Sementara Salesman ditambah Bon Sementara Kacab
+	       --'E',
+	       null, null, 8 as flag
 	FROM c_payment p
 	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
 	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
 	INNER JOIN ad_user u ON u.ad_user_id=p.salesrep_id
-	WHERE p.datetrx BETWEEN $P{DateTrx} AND $P{DateTrx2}
-	AND p.c_bankaccount_id=1000003
+	WHERE p.datetrx
+	BETWEEN CASE
+		WHEN $P{jns_lap}='K1' AND $P{jns_lap}='K12'
+	         	THEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+		ELSE $P{DateTrx}
+	        END
+	AND $P{DateTrx2}
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID KAS Kecil Madiun
 	AND p.isreceipt='N' --AND c.chargegroup is not null AND c.chargegroup='D'
 	AND p.c_charge_id=1000063
-	--Tampilkan jika jenis laporan = 'K1' dan selalu tampilkan Bon BM
-	AND ($P{jns_lap} = 'K1' OR u.ad_user_id=1002666) --ID nya BM Madiun (Pak Eko)
-	GROUP BY c.chargegroup
+	AND u.ad_user_id NOT IN
+		((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+	--Tampilkan jika jenis laporan = 'K1'/'K3' dan selalu tampilkan Bon BM
+	AND ($P{jns_lap} IN ('K1', 'K3') OR
+	     CASE
+		WHEN $P{jns_lap}='K4' THEN u.ad_user_id=0 --jika laporan K4 maka Bon Semntara tidak ditampilkan
+	     	ELSE u.ad_user_id IN
+		      ((SELECT tdi_getbmid($P{AD_Org_ID})), (SELECT tdi_getbmcadid($P{AD_Org_ID})))
+	     END) --ID nya BM Madiun (Pak Eko)
+	--GROUP BY c.chargegroup
 ) AS lap_kas_keluar
-ORDER BY chargegroup, flag]]>
+ORDER BY chargegroup, flag, sequenceno]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="bankacc_id" class="java.math.BigDecimal"/>
@@ -190,15 +342,21 @@ ORDER BY chargegroup, flag]]>
 	<field name="sub_total" class="java.math.BigDecimal"/>
 	<field name="total" class="java.math.BigDecimal"/>
 	<field name="chargegroup" class="java.lang.String"/>
+	<field name="sequenceno" class="java.math.BigDecimal"/>
 	<field name="flag" class="java.lang.Integer"/>
 	<field name="pengeluaran_lalu" class="java.math.BigDecimal"/>
+	<field name="nama_org" class="java.lang.String"/>
+	<field name="admin_a" class="java.lang.String"/>
+	<field name="admin_b" class="java.lang.String"/>
+	<field name="admin_c" class="java.lang.String"/>
+	<field name="bm" class="java.lang.String"/>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
 	<title>
 		<band height="20" splitType="Stretch">
 			<staticText>
-				<reportElement x="0" y="0" width="301" height="20" uuid="657fd328-66f4-4e6c-a8dd-f3de43f645bf"/>
+				<reportElement x="0" y="0" width="455" height="20" uuid="657fd328-66f4-4e6c-a8dd-f3de43f645bf"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="14" isBold="true"/>
 				</textElement>
@@ -209,18 +367,18 @@ ORDER BY chargegroup, flag]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$P{jns_lap}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$P{jns_lap}=='K4' ? "K1-4" : $P{jns_lap}]]></textFieldExpression>
 			</textField>
 		</band>
 	</title>
 	<pageHeader>
 		<band height="20" splitType="Stretch">
 			<textField>
-				<reportElement x="0" y="0" width="117" height="20" uuid="11f4324f-264d-4da6-8699-d5e7e5ef593a"/>
+				<reportElement x="0" y="0" width="140" height="20" uuid="11f4324f-264d-4da6-8699-d5e7e5ef593a"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA["Cabang: "+"Madiun"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["Cabang: "+$F{nama_org}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="366" y="0" width="70" height="20" uuid="5cf87337-c34c-4682-8aca-ad1a20c7facb"/>
@@ -235,7 +393,7 @@ ORDER BY chargegroup, flag]]>
 				<textFieldExpression><![CDATA[$P{DateTrx}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd MMMMM yyyy">
-				<reportElement x="463" y="0" width="88" height="20" uuid="91b7347d-71d1-4f11-a4a3-a70162c613af"/>
+				<reportElement x="463" y="0" width="103" height="20" uuid="91b7347d-71d1-4f11-a4a3-a70162c613af"/>
 				<textElement verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$P{DateTrx2}]]></textFieldExpression>
 			</textField>
@@ -305,7 +463,7 @@ ORDER BY chargegroup, flag]]>
 					<rightPen lineWidth="0.0"/>
 				</box>
 				<textElement textAlignment="Right"/>
-				<textFieldExpression><![CDATA["PENGELUARAN MINGGU LALU"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["PENGELUARAN K12"]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
 				<reportElement x="319" y="20" width="236" height="13" uuid="2f459ea7-cf21-4cdc-955b-477823ecd570">
@@ -321,7 +479,7 @@ ORDER BY chargegroup, flag]]>
 			</textField>
 			<staticText>
 				<reportElement mode="Opaque" x="318" y="0" width="137" height="33" backcolor="#DDDDDD" uuid="d70b7e97-1509-41e0-b721-4f09c624aef3">
-					<printWhenExpression><![CDATA[$P{jns_lap} != "K4"]]></printWhenExpression>
+					<printWhenExpression><![CDATA[$P{jns_lap} == "K1" || $P{jns_lap} == "K12"]]></printWhenExpression>
 				</reportElement>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -336,7 +494,7 @@ ORDER BY chargegroup, flag]]>
 			</staticText>
 			<staticText>
 				<reportElement mode="Opaque" x="455" y="0" width="100" height="33" backcolor="#DDDDDD" uuid="28e33df4-7481-4ae0-9925-c665cb78c221">
-					<printWhenExpression><![CDATA[$P{jns_lap} != "K4"]]></printWhenExpression>
+					<printWhenExpression><![CDATA[$P{jns_lap} == "K1" || $P{jns_lap} == "K12"]]></printWhenExpression>
 				</reportElement>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -351,7 +509,7 @@ ORDER BY chargegroup, flag]]>
 			</staticText>
 			<staticText>
 				<reportElement mode="Opaque" x="28" y="0" width="291" height="33" backcolor="#DDDDDD" uuid="79afdde1-2715-45fb-abc3-969b279e1e26">
-					<printWhenExpression><![CDATA[$P{jns_lap} != "K4"]]></printWhenExpression>
+					<printWhenExpression><![CDATA[$P{jns_lap} == "K1" || $P{jns_lap} == "K12"]]></printWhenExpression>
 				</reportElement>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -366,7 +524,7 @@ ORDER BY chargegroup, flag]]>
 			</staticText>
 			<staticText>
 				<reportElement mode="Opaque" x="0" y="0" width="28" height="33" backcolor="#DDDDDD" uuid="834dc1d1-90d8-4598-b425-16d0b6d2f4a3">
-					<printWhenExpression><![CDATA[$P{jns_lap} != "K4"]]></printWhenExpression>
+					<printWhenExpression><![CDATA[$P{jns_lap} == "K1" || $P{jns_lap} == "K12"]]></printWhenExpression>
 				</reportElement>
 				<box>
 					<topPen lineWidth="1.0"/>
@@ -382,131 +540,132 @@ ORDER BY chargegroup, flag]]>
 		</band>
 	</columnHeader>
 	<detail>
-		<band height="15" splitType="Stretch">
+		<band height="12" splitType="Stretch">
 			<textField isBlankWhenNull="true">
-				<reportElement style="BG_subtitle" x="0" y="1" width="28" height="14" uuid="66e693cd-bc3b-47bb-8d2e-e59212a4c932"/>
+				<reportElement style="BG_subtitle" x="0" y="1" width="28" height="11" uuid="66e693cd-bc3b-47bb-8d2e-e59212a4c932"/>
 				<box rightPadding="5">
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
-					<font fontName="Arial"/>
+					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{row_no}==null ?
     ($F{total}>0 ? "" : $F{chargegroup}) : $F{row_no}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement style="BG_subtitle" x="28" y="1" width="291" height="14" uuid="4e78a988-296b-4930-baa3-22f9d0deed05"/>
+				<reportElement style="BG_subtitle" x="28" y="1" width="291" height="11" uuid="4e78a988-296b-4930-baa3-22f9d0deed05"/>
 				<box leftPadding="5">
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement verticalAlignment="Middle">
-					<font fontName="Arial"/>
+					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement style="BG_subtitle" x="318" y="1" width="137" height="14" uuid="bbbd509d-a637-4434-aaeb-7962a11c9e6a"/>
+				<reportElement style="BG_subtitle" x="318" y="1" width="137" height="11" uuid="bbbd509d-a637-4434-aaeb-7962a11c9e6a"/>
 				<box rightPadding="5">
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{sub_total}]]></textFieldExpression>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sub_total}==0 ? "" : $F{sub_total}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00" isBlankWhenNull="true">
-				<reportElement style="BG_subtitle" x="455" y="1" width="100" height="14" uuid="27fbaa81-cb8d-4086-b578-e8ee43f88657"/>
+				<reportElement style="BG_subtitle" x="455" y="1" width="100" height="11" uuid="27fbaa81-cb8d-4086-b578-e8ee43f88657"/>
 				<box rightPadding="5">
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{total}]]></textFieldExpression>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{total}==0 ? " " : $F{total}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
-	<columnFooter>
-		<band height="11" splitType="Stretch"/>
-	</columnFooter>
 	<summary>
-		<band height="262" splitType="Stretch">
+		<band height="227" splitType="Stretch">
 			<textField>
-				<reportElement x="473" y="244" width="81" height="15" uuid="6ec68130-e010-41a0-9ce0-2c9d22d937db"/>
+				<reportElement x="455" y="209" width="99" height="15" uuid="6ec68130-e010-41a0-9ce0-2c9d22d937db"/>
 				<textElement textAlignment="Center"/>
 				<textFieldExpression><![CDATA["S&M Manager"]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="250" y="244" width="81" height="15" uuid="0e3f8558-5315-4c11-861e-b1bc28774264"/>
+				<reportElement x="215" y="209" width="151" height="15" uuid="0e3f8558-5315-4c11-861e-b1bc28774264"/>
 				<textElement textAlignment="Center"/>
-				<textFieldExpression><![CDATA["BM Madiun"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["Branch Manager"]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="6" y="146" width="56" height="15" uuid="c2484c01-122d-4931-aee2-c407ed3dc8e6"/>
+				<reportElement x="6" y="119" width="56" height="15" uuid="c2484c01-122d-4931-aee2-c407ed3dc8e6"/>
 				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA["Madiun, "]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{nama_org}+", "]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="250" y="231" width="81" height="13" uuid="2b5c39fa-1ff4-4aea-a18b-8054223afb01"/>
+				<reportElement x="215" y="196" width="151" height="13" uuid="2b5c39fa-1ff4-4aea-a18b-8054223afb01"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA["(Eko Purnomo)"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["("+$F{bm}+")"]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="13" y="166" width="81" height="13" uuid="0f23b120-4a82-4bf6-80fd-75e88af01d67"/>
+				<reportElement x="13" y="139" width="81" height="13" uuid="0f23b120-4a82-4bf6-80fd-75e88af01d67"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<text><![CDATA[Dibuat Oleh,]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="13" y="232" width="81" height="13" uuid="84ebc4bd-4cad-4207-bf08-752e1520be6c"/>
+				<reportElement x="0" y="197" width="115" height="13" uuid="84ebc4bd-4cad-4207-bf08-752e1520be6c"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA["(Fitri)"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["("+$F{admin_b}+")"]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="473" y="231" width="81" height="13" uuid="d85d75cc-f503-410c-8b09-0ace735bc7ef"/>
+				<reportElement x="455" y="196" width="99" height="13" uuid="d85d75cc-f503-410c-8b09-0ace735bc7ef"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA["(Eddy Kumoro)"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["(EDDY KUMORO)"]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd MMMMM yyyy">
-				<reportElement x="62" y="146" width="91" height="15" uuid="668ea505-fdaf-4420-b8c9-ca3f4c714f1b"/>
+				<reportElement x="62" y="119" width="112" height="15" uuid="668ea505-fdaf-4420-b8c9-ca3f4c714f1b"/>
 				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$P{tgl_print}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="13" y="247" width="81" height="15" uuid="433ab271-a5ed-4329-a5e0-a10707578f36"/>
+				<reportElement x="13" y="212" width="81" height="15" uuid="433ab271-a5ed-4329-a5e0-a10707578f36"/>
 				<textElement textAlignment="Center"/>
 				<textFieldExpression><![CDATA["Adm B"]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="250" y="166" width="81" height="13" uuid="3ca50dab-f327-49d1-89ea-eb535319d578"/>
+				<reportElement x="250" y="139" width="81" height="13" uuid="3ca50dab-f327-49d1-89ea-eb535319d578"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<text><![CDATA[Mengetahui,]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="478" y="166" width="66" height="13" uuid="dbeb5bd6-5e1f-4617-a8bd-3497ac02417c"/>
+				<reportElement x="466" y="139" width="66" height="13" uuid="dbeb5bd6-5e1f-4617-a8bd-3497ac02417c"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<text><![CDATA[Menyetujui,]]></text>
 			</staticText>
 			<subreport>
-				<reportElement x="0" y="0" width="555" height="142" uuid="9738fe40-7874-4c88-9df1-efc82dad2493"/>
+				<reportElement x="0" y="12" width="555" height="95" uuid="9738fe40-7874-4c88-9df1-efc82dad2493"/>
 				<subreportParameter name="SUBREPORT_DIR">
 					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
 				</subreportParameter>
@@ -516,8 +675,17 @@ ORDER BY chargegroup, flag]]>
 				<subreportParameter name="DateTrx2">
 					<subreportParameterExpression><![CDATA[$P{DateTrx2}]]></subreportParameterExpression>
 				</subreportParameter>
+				<subreportParameter name="C_Period_ID">
+					<subreportParameterExpression><![CDATA[$P{C_Period_ID}]]></subreportParameterExpression>
+				</subreportParameter>
 				<subreportParameter name="DateTrx">
 					<subreportParameterExpression><![CDATA[$P{DateTrx}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="AD_Org_ID">
+					<subreportParameterExpression><![CDATA[$P{AD_Org_ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="tgl_print">
+					<subreportParameterExpression><![CDATA[$P{tgl_print}]]></subreportParameterExpression>
 				</subreportParameter>
 				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
 				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "LapPerongkosanKSub.jasper"]]></subreportExpression>

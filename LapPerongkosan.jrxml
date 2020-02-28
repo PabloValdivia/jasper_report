@@ -9,6 +9,9 @@
 	<parameter name="DateTrx2" class="java.util.Date">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
+	<parameter name="C_Period_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[--Laporan Perongosan
 SELECT * FROM (
@@ -37,29 +40,15 @@ SELECT * FROM (
 	--GROUP BY p.datetrx, ba.c_bankaccount_id, c.name, p.isreceipt
 	--ORDER BY p.datetrx, ba.c_bankaccount_id, p.isreceipt desc
 UNION ALL
-	--Saldo Awal Oktober 2019
-	SELECT null, null, null, 'SALDO AWAL OKTOBER 2019', null,
-	(SELECT
-	 (SELECT COALESCE(sum(p.payamt),0)
-	  FROM c_payment p
-	  WHERE p.isreceipt='Y'
-	  AND p.c_bankaccount_id=1000003
-	  AND p.documentdate BETWEEN '2019-08-01' AND '2019-08-31') -
-	  COALESCE(sum(p1.payamt),0) as sisa_saldo
-	FROM c_payment p1
-	WHERE p1.isreceipt='N'
-	AND p1.c_bankaccount_id=1000003
-	AND p1.datetrx BETWEEN '2019-08-01' AND '2019-08-31')+ -- Sisa Saldo Agustus
-	(SELECT COALESCE(sum(p.payamt),0)
-	 FROM c_payment p
-	 WHERE p.isreceipt='Y'
-	 AND p.c_bankaccount_id=1000003
-	 AND p.datetrx BETWEEN '2019-09-01' AND '2019-09-30') -
-	 COALESCE(sum(p1.payamt),0) as sisa_saldo, null, 0 as flag
-	FROM c_payment p1
-	WHERE p1.isreceipt='N'
-	AND p1.c_bankaccount_id=1000003
-	AND p1.datetrx BETWEEN '2019-09-01' AND '2019-09-30' --Sisa Saldo September
+	--Saldo Awal Bulan Berjalan (Sesuai periode_ID)
+	SELECT null, 0, null, 'SISA SALDO BULAN LALU',
+	       null, bb.beginningamt,
+	       0, 0 as flag
+	FROM tdi_balance b
+	INNER JOIN tdi_balancebank bb ON bb.tdi_balance_id=b.tdi_balance_id
+	INNER JOIN c_period p ON p.c_period_id=b.c_period_id
+	WHERE p.startdate=(SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+	AND c_bankaccount_id=1000003 --Bank Account kas kecil madiun
  ) as lap_perongosan
  ORDER BY flag, datetrx, c_bankaccount_id, isreceipt desc]]>
 	</queryString>

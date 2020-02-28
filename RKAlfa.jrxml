@@ -32,7 +32,7 @@
 	 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
 	 INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
 	 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
-	 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+	 LEFT JOIN c_city c ON l.c_city_id = c.c_city_id
 	 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 	 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
 	 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
@@ -46,7 +46,7 @@ INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
 INNER JOIN c_bpartner bp ON io.c_bpartner_id = bp.c_bpartner_id
 INNER JOIN c_bpartner_location bpl ON io.c_bpartner_location_id = bpl.c_bpartner_location_id
 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
-INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+LEFT JOIN c_city c ON l.c_city_id = c.c_city_id
 INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN m_movementline ml ON ml.m_inoutline_id = iol.m_inoutline_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id

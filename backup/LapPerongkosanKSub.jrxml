@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="LapPerongkosanKSub" language="groovy" pageWidth="595" pageHeight="842" columnWidth="595" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isFloatColumnFooter="true" uuid="9a882fd5-021e-4c24-9ce6-b70244ac8ed0">
+	<property name="ireport.zoom" value="1.4641000000000008"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="DateTrx" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DateTrx2" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="jns_lap" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="C_Period_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="AD_Org_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[--Query Untuk jumlah Sub Total Bon dan Total Biaya
+SELECT * FROM (
+	SELECT 'SISA SALDO BULAN LALU' as bon, (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID}) as tgl_terima,
+			 bb.beginningamt as sub_total_bon, 0 as total_biaya, 0 as total_bon_sementara, 0 as pengeluaran_lalu, 0 as flag
+	FROM tdi_balance b
+	INNER JOIN tdi_balancebank bb ON bb.tdi_balance_id=b.tdi_balance_id
+	INNER JOIN c_period p ON p.c_period_id=b.c_period_id
+	WHERE p.startdate=(SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+	AND c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID Kas Kecil Madiun
+UNION ALL
+	SELECT c.name as bon, datetrx as tgl_terima, p.payamt,
+			(SELECT SUM(p.payamt)
+			 FROM c_payment p
+			 INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+			 INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+			 WHERE p.datetrx
+			 BETWEEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+			 AND $P{DateTrx2}
+			 AND p.c_bankaccount_id IN (
+					(SELECT tdi_getbaid($P{AD_Org_ID}, 1)), --1000003 ID KAS Kecil Madiun
+					(SELECT tdi_getbaid($P{AD_Org_ID}, 2))  --1000012 ID BON sementara yg jadi Biaya Salesman
+			 )
+			 AND p.c_charge_id<>1000063 --Bon Sementara tidak dihitung
+			 AND p.isreceipt='N') as total_biaya,
+		(SELECT COALESCE(
+			CASE
+			   WHEN $P{jns_lap} IN ('K1', 'K3') THEN SUM(p.payamt)
+			   ELSE 0
+		 	END
+			+
+			(
+		 	-- Perhitungan Bon Sementara Kacab dihitung dari awal minggu
+		  	SELECT
+			  sum(p1.payamt)
+		 	FROM c_payment p1
+		  	INNER JOIN ad_user u1 ON u1.ad_user_id=p1.salesrep_id
+		  	WHERE p1.datetrx
+			BETWEEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+		  	AND $P{DateTrx2}
+		  	AND p1.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID Kas Kecil Madiun
+		  	AND p1.isreceipt='N'
+		  	AND p1.c_charge_id=1000063 --Charge bon sementara
+		  	AND u1.ad_user_id=(SELECT tdi_getbmid($P{AD_Org_ID})) --1002666 ID BM madiun
+		 	-- End of Perhitungan Bon Sementara Kacab
+			)
+		, 0) --end of coalesce
+		FROM c_payment p
+		INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+		INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+		INNER JOIN ad_user u ON u.ad_user_id=p.salesrep_id
+		WHERE p.datetrx
+		BETWEEN
+		CASE
+			WHEN $P{jns_lap}='K1' AND $P{jns_lap}='K12'
+	         		THEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID})
+			ELSE $P{DateTrx}
+	        	END
+		AND $P{DateTrx2}
+		AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID Kas Kecil Madiun
+		AND u.ad_user_id<>(SELECT tdi_getbmid($P{AD_Org_ID})) --1002666 ID BM madiun
+		AND p.isreceipt='N' --AND c.chargegroup is not null AND c.chargegroup='D'
+		--Tampilkan/hitung jika jenis laporan = 'K1' dan selalu tampilkan Bon BM
+		AND ($P{jns_lap} IN ('K1', 'K3') OR
+		     CASE
+			WHEN $P{jns_lap}='K4' THEN u.ad_user_id=0
+	     		ELSE u.ad_user_id=(SELECT tdi_getbmid($P{AD_Org_ID})) --1002666 ID BM madiun
+	     	     END) --ID nya BM Madiun (Pak Eko)
+		AND p.c_charge_id=1000063 --1000063 ID bon sementara
+		) as total_bon_sementara,
+	(
+	  SELECT COALESCE(SUM(p.payamt),0)
+	  FROM c_payment p
+	  INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+	  INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+	  WHERE p.datetrx BETWEEN '2019-09-01' AND (SELECT startdate FROM c_period WHERE c_period_id=1000070) --Period Nov-19 biarin dulu keknya gk dipake
+	  AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID Kas Kecil Madiun
+	  AND p.isreceipt='N' AND $P{jns_lap}<>'K1'
+	) as pengeluaran_lalu, 1 as flag
+	FROM c_payment p
+	INNER JOIN c_bankaccount ba ON ba.c_bankaccount_id=p.c_bankaccount_id
+	INNER JOIN c_charge c ON c.c_charge_id=p.c_charge_id
+	WHERE p.datetrx BETWEEN (SELECT startdate FROM c_period WHERE c_period_id=$P{C_Period_ID}) AND $P{DateTrx2}
+	AND p.c_bankaccount_id=(SELECT tdi_getbaid($P{AD_Org_ID}, 1)) --1000003 ID Kas Kecil Madiun
+	AND p.isreceipt='Y'
+	AND p.c_payment_id not in (1008933, 1008979) --untuk sementara aja
+) as lap_k_sub
+ORDER BY tgl_terima]]>
+	</queryString>
+	<field name="bon" class="java.lang.String"/>
+	<field name="tgl_terima" class="java.sql.Timestamp"/>
+	<field name="sub_total_bon" class="java.math.BigDecimal"/>
+	<field name="total_biaya" class="java.math.BigDecimal"/>
+	<field name="total_bon_sementara" class="java.math.BigDecimal"/>
+	<field name="pengeluaran_lalu" class="java.math.BigDecimal"/>
+	<field name="flag" class="java.lang.Integer"/>
+	<variable name="sub_total_bon_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{sub_total_bon}]]></variableExpression>
+	</variable>
+	<variable name="total_biaya_k1_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<columnHeader>
+		<band height="15" splitType="Stretch">
+			<staticText>
+				<reportElement mode="Opaque" x="0" y="0" width="100" height="15" backcolor="#DDDDDD" uuid="e9adbf26-a8e9-48a5-958b-6581994b9238"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[BON]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="100" y="0" width="197" height="15" backcolor="#DDDDDD" uuid="1f8502c3-ef36-48f1-a0ab-e291757eca2d"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TERIMA TANGGAL]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="297" y="0" width="116" height="15" backcolor="#DDDDDD" uuid="21912e23-7990-477e-9319-62544d114f38"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SUB TOTAL (Rp.)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement mode="Opaque" x="413" y="0" width="142" height="15" backcolor="#DDDDDD" uuid="21724ff7-fa4d-43da-85e0-24c2ea929c72"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[TOTAL (Rp.)]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="11" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="100" height="11" uuid="5afb6f72-5301-4713-9d30-4d85248ec2ae"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{bon}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="100" y="0" width="197" height="11" uuid="2ea797e0-f94a-457e-8475-074bddf231a2"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tgl_terima}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="297" y="0" width="116" height="11" uuid="29e101ef-568d-4f54-92a8-9780e79b533b"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{sub_total_bon}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="413" y="0" width="142" height="11" uuid="64da03b3-c37e-4269-b23d-a0959d92b2f6"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="56" splitType="Stretch">
+			<staticText>
+				<reportElement x="100" y="0" width="197" height="11" uuid="75043fe4-fbec-45a9-81ba-d8acdafdf494"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[TOTAL BON (PENERIMAAN)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="22" width="197" height="11" uuid="ec068747-1aa3-4d4c-9d88-8bb658e0bbc3"/>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[SALDO / SELISIH]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="33" width="197" height="11" uuid="b4d5c00c-8976-4781-aae9-56e5f7d3cef4">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[TOTAL BON SEMENTARA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="44" width="197" height="11" uuid="8b3f2033-766d-4065-b35b-1a511d536cf5">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<text><![CDATA[SALDO SETELAH BON SEMENTARA]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement x="413" y="0" width="142" height="11" uuid="f4b085fe-c699-4a3c-a786-76720844e71a"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{sub_total_bon_1}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="413" y="11" width="142" height="11" uuid="f1bdb322-be43-4757-b236-de54a72535f0"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{total_biaya}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="413" y="22" width="142" height="11" uuid="4fc4bb61-89c9-44a9-ba13-656c85b40791"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{sub_total_bon_1}-$F{total_biaya}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="413" y="33" width="142" height="11" uuid="038e72da-83d5-439e-9646-c6e56a5cd0f0">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{total_bon_sementara}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="413" y="44" width="142" height="11" uuid="5ce50a1a-53ed-4464-babf-2d621d3eba36">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{sub_total_bon_1}-$F{total_biaya}-$F{total_bon_sementara}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="297" y="0" width="116" height="11" uuid="521ce616-b8b3-45be-ad9d-0dfa9d7bcd54"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="297" y="11" width="116" height="11" uuid="de548812-c90d-4960-bc12-8e9c55153998"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="297" y="22" width="116" height="11" uuid="29f0e4f6-1296-4d8b-a285-6e25401a4f87"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="297" y="33" width="116" height="11" uuid="22f0622c-e47a-4344-93c9-41e804eee9c1">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="297" y="44" width="116" height="11" uuid="41840ddf-6117-4249-a0e8-166eea7e6c4a">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="100" height="11" uuid="21bbd732-2041-4951-96df-4a77089b19d6"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="0" y="11" width="100" height="11" uuid="0279fa5a-d012-4256-81c0-601659934948"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="0" y="22" width="100" height="11" uuid="c360724c-cde9-4144-b951-243f18c94758"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="0" y="33" width="100" height="11" uuid="d9739d58-84c0-44d3-bf69-5224d6f8310c">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="0" y="44" width="100" height="11" uuid="800d9757-2291-4c58-8025-f743ab7f3b6b">
+					<printWhenExpression><![CDATA[$P{jns_lap}!='K4']]></printWhenExpression>
+				</reportElement>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="11" width="197" height="11" uuid="91180608-b387-4351-9b13-a0fcbc3ae6ee"/>
+				<box leftPadding="5"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{jns_lap}=='K3' ? "TOTAL BIAYA K12 & K3" :
+$P{jns_lap}=='K4' ? "TOTAL BIAYA K123 & K4" :
+$P{jns_lap}=='K5' ? "TOTAL BIAYA K1234 & K5" : "TOTAL BIAYA "+$P{jns_lap}]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnFooter>
+</jasperReport>

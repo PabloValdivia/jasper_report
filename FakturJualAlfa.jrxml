@@ -1,17 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FakturCabang" language="groovy" pageWidth="609" pageHeight="396" columnWidth="593" leftMargin="8" rightMargin="8" topMargin="8" bottomMargin="8" isFloatColumnFooter="true" uuid="d0a1f75d-d0f6-4c20-84e1-8c9a083df0dd">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FakturCabang" language="groovy" pageWidth="609" pageHeight="396" columnWidth="593" leftMargin="8" rightMargin="8" topMargin="8" bottomMargin="8" uuid="d0a1f75d-d0f6-4c20-84e1-8c9a083df0dd">
 	<property name="ireport.zoom" value="1.5"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["D:\\Jobs\\Documents\\JasperReport\\"]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[--Query invoice seperti proforma
-SELECT row_number() over() as row_no,
-	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon,
+SELECT row_number() over(ORDER BY p.name) as row_no,
+	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, --poreference tidak dipakai
+io.nomorpo, sr.name as rayon,
        bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
-	   bp.name as bp_name, l.address1 as bp_address, upper(sd.name) as bp_subdist, l.isprinted, c.name as bp_city,
+	   bp.name as bp_name, l.address1 as bp_address, upper(sd.name) as bp_subdist, l.isprinted, UPPER(c.name) as bp_city,
 	   bpl.name as locationname, uo.name as uomnamex,
              (SELECT u1.name FROM c_uom u1
               LEFT JOIN m_product p1 ON p1.c_uom_id=u1.c_uom_id
@@ -25,7 +29,11 @@ SELECT row_number() over() as row_no,
 	    	      WHERE p1.m_product_id=p.m_product_id) --ambil satuan terkecil di master product
 	   END as uomname, --jare galih (22 Aug 2019)
 	   (SELECT u1.name FROM c_uom u1 WHERE u1.c_uom_id=il.c_uom_id) as uomnamexx,
-	   p.name as productname,
+	   p.name as productname, --pakai ini kata Mega 12 Nov 2019
+	   CASE
+		WHEN iol.c_uom_id=uc.c_uom_to_id THEN p.description
+		ELSE p.name
+	   END as productnamex, --gak jadi kata Mega 12 Nov 2019
 	   CASE
 	   	WHEN uc.isprintprice='Y' THEN il.qtyentered
 		ELSE il.qtyinvoiced
@@ -42,14 +50,27 @@ SELECT row_number() over() as row_no,
 		ELSE il.pricelist
 	   END as harga_satuan, --jare galih (22 Aug 2019)
 	   --il.rewarddiscount as rwd_disc, il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
-	   il.regulardiscount||'%'||
+	   CASE
+	      	WHEN il.regulardiscount is not null AND il.regulardiscount<>'0'
+		THEN ROUND(il.regulardiscount,0)||'%'
+		ELSE ''
+	   END as reg_disc,
+	   il.specialdiscount as reg_spec_disc,
 	   CASE
 	   	WHEN il.rewarddiscount is not null AND il.rewarddiscount<>'0'
-	 	THEN '+'||il.rewarddiscount||'%'
+	 	THEN '+'||ROUND(il.rewarddiscount,0)||'%'
 		WHEN il.additionaldiscount is not null AND il.additionaldiscount > 0
-		THEN '+'||il.additionaldiscount||'%'
+		THEN '+'||ROUND(il.additionaldiscount,0)||'%'
 		ELSE ''
-	   END as all_disc,
+	   END as rewadd_discx, --gk jadi dipakek, pakai yg string discreward (Mega - 21 Nov 2019)
+	   CASE
+	   	WHEN il.discreward<>'' AND il.discreward<>'0'
+	 	THEN '+'||il.discreward||'%'
+		WHEN il.additionaldiscount is not null AND il.additionaldiscount > 0
+		THEN '+'||ROUND(il.additionaldiscount,0)||'%'
+		ELSE ''
+	   END as rewadd_disc,
+             il.isspecialdiscount,
 	   il.linenetamt as harga_jual, --jare galih (22 Aug 2019)
 	  (SELECT SUM(qtyentered /
 		case
@@ -74,13 +95,11 @@ SELECT row_number() over() as row_no,
 	   ELSE 'nope'
 	  END as sts_wp, --gw kasih CASE karena males ganti kondisi di jaspernya wkwkwk
 	  --(SELECT ir2. FROM tdi_invoicereturn ir2 WHERE ir2.c_invoice_id=i.c_invoice_id) as cn1
-	  CASE
-	   WHEN bpl.iswp0='Y'
-               THEN (SELECT 'Kredit Memo: '||i2.documentno FROM c_invoice i2
-                     WHERE c_invoice_id=ir.c_invoicereturn_id)
-	   ELSE (SELECT 'Kredit Memo: '||i2.documentno FROM c_invoice i2
-                   WHERE c_invoice_id=ir.c_invoicereturnwp_id)
-	  END as cn --dikasih CASE wp0=YES maka bla bla
+	  (SELECT COALESCE(SUM(il1.linenetamt), 0)
+	     FROM c_invoiceline il1
+	     WHERE il1.c_invoice_id=i.c_invoice_id
+	     AND il1.c_charge_id is not null
+	    ) as total_charge --jumlahkan total potongan/charge. kata Ci Mega jika charge is not null maka dianggap potongan (28 Nov 2019)
 FROM m_inout io
 INNER JOIN m_inoutline iol on iol.m_inout_id=io.m_inout_id
 INNER JOIN c_order o on o.c_order_id=io.c_order_id
@@ -89,7 +108,7 @@ INNER JOIN c_invoice i on i.c_invoice_id=il.c_invoice_id
 INNER JOIN m_product p on p.m_product_id=iol.m_product_id
 INNER JOIN c_bpartner_location bl ON bl.c_bpartner_location_id=i.c_bpartner_location_id
 INNER JOIN c_uom uo ON il.c_uom_id = uo.c_uom_id
-INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
+INNER JOIN c_salesregion sr ON i.c_salesregion_id = sr.c_salesregion_id
 INNER JOIN c_bpartner bp ON i.c_bpartner_id = bp.c_bpartner_id
 INNER JOIN c_bpartner_location bpl ON i.c_bpartner_location_id = bpl.c_bpartner_location_id
 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
@@ -97,8 +116,15 @@ INNER JOIN tdi_subdistrict sd ON sd.tdi_subdistrict_id=l.tdi_subdistrict_id
 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
 INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
-LEFT JOIN tdi_invoicereturn ir ON ir.c_invoice_id=i.c_invoice_id
-WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
+--LEFT JOIN tdi_invoicereturn ir ON ir.c_invoice_id=i.c_invoice_id
+WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E'
+--cek jika product ada Conversionnya maka cek field isShowinProductInfo
+AND CASE
+    	WHEN uc.m_product_id is null THEN TRUE
+    	ELSE uc.isshowinproductinfo='Y'
+    END
+AND il.c_charge_id is null
+ORDER BY productname]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
@@ -109,6 +135,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	<field name="no_order" class="java.lang.String"/>
 	<field name="dateordered" class="java.sql.Timestamp"/>
 	<field name="poreference" class="java.lang.String"/>
+	<field name="nomorpo" class="java.lang.String"/>
 	<field name="rayon" class="java.lang.String"/>
 	<field name="name2" class="java.lang.String"/>
 	<field name="bp_npwp_name" class="java.lang.String"/>
@@ -124,11 +151,16 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	<field name="uomname" class="java.lang.String"/>
 	<field name="uomnamexx" class="java.lang.String"/>
 	<field name="productname" class="java.lang.String"/>
+	<field name="productnamex" class="java.lang.String"/>
 	<field name="qtyx" class="java.math.BigDecimal"/>
 	<field name="qty" class="java.math.BigDecimal"/>
 	<field name="qtyxx" class="java.math.BigDecimal"/>
 	<field name="harga_satuan" class="java.math.BigDecimal"/>
-	<field name="all_disc" class="java.lang.String"/>
+	<field name="reg_disc" class="java.lang.String"/>
+	<field name="reg_spec_disc" class="java.lang.String"/>
+	<field name="rewadd_discx" class="java.lang.String"/>
+	<field name="rewadd_disc" class="java.lang.String"/>
+	<field name="isspecialdiscount" class="java.lang.String"/>
 	<field name="harga_jual" class="java.math.BigDecimal"/>
 	<field name="kolix" class="java.math.BigDecimal"/>
 	<field name="tonasex" class="java.math.BigDecimal"/>
@@ -137,7 +169,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 	<field name="duedate" class="java.sql.Date"/>
 	<field name="sts_wpx" class="java.lang.String"/>
 	<field name="sts_wp" class="java.lang.String"/>
-	<field name="cn" class="java.lang.String"/>
+	<field name="total_charge" class="java.math.BigDecimal"/>
 	<variable name="harga_jual_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{harga_jual}]]></variableExpression>
 	</variable>
@@ -178,35 +210,35 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?" "+$F{bp_city}:""]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="497" y="37" width="89" height="10" uuid="d1dbbd5e-3576-4fdf-bcac-ad090fece663"/>
+				<reportElement x="493" y="40" width="89" height="10" uuid="d1dbbd5e-3576-4fdf-bcac-ad090fece663"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{dateordered}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="497" y="26" width="102" height="10" uuid="b4a0a8a7-319d-4619-80e6-757d1d0ebea3"/>
+				<reportElement x="493" y="29" width="102" height="10" uuid="b4a0a8a7-319d-4619-80e6-757d1d0ebea3"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{no_order}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="497" y="48" width="102" height="10" uuid="f40d17a1-7802-4aec-9ba7-8c6c1abb641b"/>
+				<reportElement x="493" y="51" width="102" height="10" uuid="f40d17a1-7802-4aec-9ba7-8c6c1abb641b"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{poreference}]]></textFieldExpression>
 			</textField>
 			<textField isBlankWhenNull="true">
-				<reportElement x="497" y="3" width="102" height="10" uuid="d8581277-bf0a-4228-9045-a97ae7833875"/>
+				<reportElement x="493" y="6" width="102" height="10" uuid="d8581277-bf0a-4228-9045-a97ae7833875"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{documentno}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="497" y="15" width="102" height="10" uuid="53c5fb57-9d96-4965-b502-5c8dc11b4021"/>
+				<reportElement x="493" y="18" width="102" height="10" uuid="53c5fb57-9d96-4965-b502-5c8dc11b4021"/>
 				<textElement>
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
@@ -248,7 +280,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?"NIK ":""]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="578" y="2" width="32" height="13" uuid="6335a4e5-da11-49da-8cb1-b84ed34d8c14"/>
+				<reportElement x="574" y="5" width="32" height="13" uuid="6335a4e5-da11-49da-8cb1-b84ed34d8c14"/>
 				<textElement>
 					<font fontName="Arial" size="10"/>
 				</textElement>
@@ -282,9 +314,6 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{isprinted}=='Y'?":":""]]></textFieldExpression>
 			</textField>
-			<line>
-				<reportElement x="0" y="24" width="500" height="1" uuid="532039be-ac24-47de-8d29-d1119ae8990b"/>
-			</line>
 			<textField>
 				<reportElement x="222" y="24" width="195" height="10" uuid="50efcd58-9987-4e3c-9117-01a6c8768f93"/>
 				<textElement>
@@ -355,23 +384,23 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":""+$F{bp_npwp_address}+""]]></textFieldExpression>
 			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement x="493" y="62" width="89" height="10" uuid="c389a632-e086-484c-b486-ad01f5675062"/>
+				<textElement>
+					<font fontName="Arial" size="8" isStrikeThrough="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{duedate}]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
-		<band height="27" splitType="Stretch">
-			<textField>
-				<reportElement x="10" y="38" width="35" height="10" uuid="8a6fa6df-8995-4370-914d-fb03f5acf5e8"/>
-				<textElement>
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":"NPWP"]]></textFieldExpression>
-			</textField>
-		</band>
+		<band height="30" splitType="Stretch"/>
 	</columnHeader>
 	<detail>
 		<band height="11" splitType="Stretch">
 			<textField>
-				<reportElement x="123" y="1" width="159" height="10" uuid="c047bd52-3164-4e78-9027-eec062face57"/>
+				<reportElement x="115" y="1" width="203" height="10" uuid="c047bd52-3164-4e78-9027-eec062face57"/>
+				<box leftPadding="2"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
@@ -380,6 +409,7 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 			</textField>
 			<textField>
 				<reportElement x="5" y="1" width="26" height="10" uuid="5ea64594-3a5e-4514-bed0-0a83b523be72"/>
+				<box rightPadding="3"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
@@ -387,7 +417,8 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="68" y="1" width="67" height="10" uuid="3257218a-42b7-4eab-8cf3-0d5d1ff90099"/>
+				<reportElement x="65" y="1" width="55" height="10" uuid="3257218a-42b7-4eab-8cf3-0d5d1ff90099"/>
+				<box leftPadding="3"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
@@ -396,67 +427,69 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 			</textField>
 			<textField pattern="#,##0">
 				<reportElement x="34" y="1" width="35" height="10" uuid="383d45b2-7b8b-4dd6-bea3-8f9a7196f1cf"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
+				<box rightPadding="7"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{qty}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="292" y="1" width="84" height="10" uuid="e2c5ebad-1593-48a3-b37e-dc48c0b52fb2"/>
+				<reportElement x="312" y="1" width="84" height="10" uuid="e2c5ebad-1593-48a3-b37e-dc48c0b52fb2"/>
 				<textElement textAlignment="Right">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{harga_satuan}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="497" y="1" width="81" height="10" uuid="1905801d-d0ac-47c5-859d-0c4d06f18913"/>
-				<textElement textAlignment="Right">
+				<reportElement x="506" y="1" width="81" height="10" uuid="1905801d-d0ac-47c5-859d-0c4d06f18913"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{harga_jual}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
 				<reportElement x="380" y="1" width="116" height="10" uuid="84d6e51d-f02b-4b81-b1ca-66d43fbb1de4"/>
+				<box leftPadding="10"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{all_disc}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{isspecialdiscount}=='Y'? $F{reg_spec_disc}+$F{rewadd_disc} : $F{reg_disc}+$F{rewadd_disc}]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="39" splitType="Stretch">
+		<band height="120" splitType="Stretch">
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="53" y="1" width="102" height="10" uuid="429929f8-0119-4875-a62f-8f293d8a4d8d"/>
-				<textElement>
+				<reportElement x="53" y="4" width="102" height="10" uuid="429929f8-0119-4875-a62f-8f293d8a4d8d"/>
+				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="8" isStrikeThrough="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{dateinvoiced}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="457" y="1" width="121" height="13" uuid="8ee1714c-7d59-44bc-9027-1d02fd8e2bb3"/>
+				<reportElement x="492" y="2" width="95" height="13" uuid="8ee1714c-7d59-44bc-9027-1d02fd8e2bb3"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0.00">
-				<reportElement x="457" y="26" width="121" height="13" uuid="fcc23ac5-6736-4ec9-8e36-f3fa70bfabdd"/>
+				<reportElement x="492" y="37" width="95" height="13" uuid="fcc23ac5-6736-4ec9-8e36-f3fa70bfabdd"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$V{harga_jual_1}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$V{harga_jual_1}+$F{total_charge}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="172" y="1" width="60" height="13" uuid="17ae1b6d-4c45-4f49-abdd-e2905453454d"/>
+				<reportElement x="172" y="4" width="60" height="13" uuid="17ae1b6d-4c45-4f49-abdd-e2905453454d"/>
 				<textElement textAlignment="Left" verticalAlignment="Middle">
 					<font fontName="Arial" size="8" isBold="false"/>
 				</textElement>
-				<text><![CDATA[TERBILANG : ]]></text>
+				<text><![CDATA[]]></text>
 			</staticText>
 			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="232" y="1" width="195" height="28" uuid="b85788e3-a431-4072-b9e2-52060db54e84"/>
+				<reportElement x="172" y="4" width="212" height="28" uuid="b85788e3-a431-4072-b9e2-52060db54e84"/>
 				<box leftPadding="0">
 					<topPen lineWidth="0.0"/>
 					<bottomPen lineWidth="0.0"/>
@@ -465,29 +498,42 @@ WHERE i.c_invoice_id = $P{RECORD_ID} AND p.producttype<>'E']]>
 				<textElement verticalAlignment="Top">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords($V{harga_jual_1}.toString())]]></textFieldExpression>
+				<textFieldExpression><![CDATA[new org.compiere.util.AmtInWords_IN().getAmtInWords(($V{harga_jual_1}+$F{total_charge}).toString())+" Rupiah"]]></textFieldExpression>
 			</textField>
-			<textField isBlankWhenNull="true">
-				<reportElement x="5" y="14" width="345" height="20" uuid="5f972640-0f33-4fa9-b32d-2a1f80ebc69d"/>
-				<textElement verticalAlignment="Middle">
+			<textField pattern="#,##0.00" isBlankWhenNull="false">
+				<reportElement x="492" y="17" width="95" height="15" uuid="bd0ef1fe-c3ba-4755-83a2-41fba1b3e8d5">
+					<printWhenExpression><![CDATA[$F{total_charge} != 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{cn}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{total_charge} != null ?
+    ABS($F{total_charge}).doubleValue() : 0]]></textFieldExpression>
 			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="384" y="18" width="115" height="13" uuid="d6f9da87-6982-4b34-adf7-04e58baef0a2">
+					<printWhenExpression><![CDATA[$F{total_charge} != 0]]></printWhenExpression>
+				</reportElement>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["RETUR/POTONGAN Rp."]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="9" y="77" width="124" height="20" uuid="2d948c61-b3bf-4de9-bf7b-f4e45acf7394"/>
+				<textElement>
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{sts_wp}=="WP0") || ($F{bp_npwp_id}.substring(0,2)=="00") ? "":"( LINDAWATI SOEHENDRA )"]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="172" y="47" width="146" height="60" uuid="2ed199ad-fa0b-45ce-b234-44708c3b4c4a"/>
+				<subreportParameter name="RECORD_ID">
+					<subreportParameterExpression><![CDATA[$P{RECORD_ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "FakturJualCbgLamaSub.jasper"]]></subreportExpression>
+			</subreport>
 		</band>
 	</columnFooter>
-	<pageFooter>
-		<band height="16" splitType="Stretch"/>
-	</pageFooter>
-	<summary>
-		<band height="21" splitType="Stretch">
-			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
-				<reportElement x="497" y="-106" width="89" height="10" uuid="c389a632-e086-484c-b486-ad01f5675062"/>
-				<textElement>
-					<font fontName="Arial" size="8" isStrikeThrough="false"/>
-				</textElement>
-				<textFieldExpression><![CDATA[$F{duedate}]]></textFieldExpression>
-			</textField>
-		</band>
-	</summary>
 </jasperReport>

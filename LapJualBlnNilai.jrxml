@@ -9,15 +9,41 @@
 	<parameter name="end_date" class="java.util.Date">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
+	<parameter name="tgl_print" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="AD_Org_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="TDI_ReadyMixTinting_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
 	<queryString>
 		<![CDATA[SELECT row_number() over(ORDER BY sr.name) as row_no,
-       sr.c_salesregion_id, sr.name as sales_rayon, bp.name as sales_name, SUM(i.grandtotal) as total_nilai
+       sr.c_salesregion_id, sr.name as sales_rayon, bp.name as sales_name,
+	tdi_getsalesname(sr.c_salesregion_id) as sales_namex, --tunggu keputusan jd ini gak
+SUM(i.grandtotal) as total_nilai,
+       (SELECT TRIM(REPLACE(o.name, 'TDI', '')) as nama_cab --melepas TDI : TDI MADIUN menjadi MADIUN
+		FROM ad_org o
+		WHERE o.ad_org_id=$P{AD_Org_ID}) as nama_org,
+       (SELECT tdi_getnamebyjob_id(1000000, $P{AD_Org_ID})) as admin_A,
+       (SELECT tdi_getnamebyjob_id(1000006, $P{AD_Org_ID})) as admin_B,
+       (SELECT tdi_getnamebyjob_id(1000005, $P{AD_Org_ID})) as admin_C,
+       (SELECT tdi_getnamebyjob_id(1000002, $P{AD_Org_ID})) as bm
 FROM c_invoice i
 INNER JOIN ad_user u ON u.ad_user_id=i.salesrep_id
 INNER JOIN c_bpartner bp ON bp.c_bpartner_id=u.c_bpartner_id
 INNER JOIN c_salesregion sr ON sr.c_salesregion_id=i.c_salesregion_id
 WHERE i.dateinvoiced BETWEEN $P{start_date} AND $P{end_date}
+-- cek type produk yg dipilih apa.
+AND CASE
+      WHEN $P{TDI_ReadyMixTinting_ID} is null THEN i.tdi_readymixtinting_id is not null
+      ELSE i.tdi_readymixtinting_id=$P{TDI_ReadyMixTinting_ID}
+    END
 AND i.docstatus IN ('CO')
+AND i.ad_org_id=$P{AD_Org_ID}
+AND i.c_doctype_id=1000002 --Doctype AR Invoice agar CN tidak ikut terpotong.
+--AND i.ad_org_id=1000003 --Org TDI Madiun sementara di-comment
 GROUP BY sr.c_salesregion_id, sr.name, bp.name
 ORDER BY sr.name]]>
 	</queryString>
@@ -25,7 +51,13 @@ ORDER BY sr.name]]>
 	<field name="c_salesregion_id" class="java.math.BigDecimal"/>
 	<field name="sales_rayon" class="java.lang.String"/>
 	<field name="sales_name" class="java.lang.String"/>
+	<field name="sales_namex" class="java.lang.String"/>
 	<field name="total_nilai" class="java.math.BigDecimal"/>
+	<field name="nama_org" class="java.lang.String"/>
+	<field name="admin_a" class="java.lang.String"/>
+	<field name="admin_b" class="java.lang.String"/>
+	<field name="admin_c" class="java.lang.String"/>
+	<field name="bm" class="java.lang.String"/>
 	<variable name="total_nilai_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
 		<variableExpression><![CDATA[$F{total_nilai}]]></variableExpression>
 	</variable>
@@ -39,7 +71,7 @@ ORDER BY sr.name]]>
 				<textElement textAlignment="Center">
 					<font size="14"/>
 				</textElement>
-				<textFieldExpression><![CDATA["LAPORAN PENJUALAN PER-BULAN (VALUE) TDI MADIUN"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["LAPORAN PENJUALAN PER-BULAN (VALUE) TDI "+$F{nama_org}]]></textFieldExpression>
 			</textField>
 		</band>
 	</title>
@@ -66,6 +98,18 @@ ORDER BY sr.name]]>
 				<reportElement x="474" y="15" width="17" height="20" uuid="7a614c00-6c48-458f-9012-36efd181e627"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<text><![CDATA[s/d]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="60" y="15" width="100" height="20" uuid="c1614a48-7f47-4514-a8a3-00da8418214a"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$P{TDI_ReadyMixTinting_ID}==null ? "ALL (Global)" :
+    $P{TDI_ReadyMixTinting_ID}==1000001 ? "TINTING" :
+    $P{TDI_ReadyMixTinting_ID}==1000000 ? "READY MIX" : ""]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="15" width="58" height="20" uuid="03dd5aea-1c9b-4957-b0fc-af8cb9f452af"/>
+				<textElement verticalAlignment="Middle"/>
+				<text><![CDATA[Tipe Sales :]]></text>
 			</staticText>
 		</band>
 	</pageHeader>
@@ -128,7 +172,7 @@ ORDER BY sr.name]]>
 	<detail>
 		<band height="20" splitType="Stretch">
 			<textField>
-				<reportElement x="0" y="0" width="30" height="20" uuid="1f064841-1fc9-45c2-8a19-428d00a4c799"/>
+				<reportElement x="0" y="0" width="29" height="20" uuid="1f064841-1fc9-45c2-8a19-428d00a4c799"/>
 				<box>
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -197,30 +241,10 @@ ORDER BY sr.name]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<text><![CDATA[TOTAL]]></text>
 			</staticText>
-			<textField>
-				<reportElement x="11" y="131" width="81" height="15" uuid="c13f200c-86f8-4462-b6ae-0c820b23fea3"/>
-				<textElement textAlignment="Center"/>
-				<textFieldExpression><![CDATA["Adm A"]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="460" y="131" width="81" height="15" uuid="388d76d8-cd03-44d6-9b93-b46731b121c3"/>
-				<textElement textAlignment="Center"/>
-				<textFieldExpression><![CDATA["BM Madiun"]]></textFieldExpression>
-			</textField>
-			<textField>
-				<reportElement x="11" y="116" width="81" height="13" uuid="9ea4a6a8-ff7d-44de-ace4-35bb10fb6840"/>
-				<box>
-					<bottomPen lineWidth="1.0"/>
-				</box>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial"/>
-				</textElement>
-				<textFieldExpression><![CDATA["(Lany K.)"]]></textFieldExpression>
-			</textField>
 			<textField pattern="dd MMMMM yyyy">
-				<reportElement x="60" y="30" width="91" height="15" uuid="e85bcd8f-d40f-4f7e-8738-5cc488d383d0"/>
+				<reportElement x="52" y="30" width="187" height="15" uuid="e85bcd8f-d40f-4f7e-8738-5cc488d383d0"/>
 				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$P{tgl_print}]]></textFieldExpression>
 			</textField>
 			<staticText>
 				<reportElement x="11" y="50" width="81" height="13" uuid="8849d479-37a4-464d-b0f6-ff0e615e2743"/>
@@ -228,24 +252,44 @@ ORDER BY sr.name]]>
 				<text><![CDATA[Dibuat Oleh,]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="460" y="51" width="81" height="13" uuid="688b86ea-4c3f-47bd-a808-1783c6047de3"/>
+				<reportElement x="440" y="50" width="81" height="13" uuid="688b86ea-4c3f-47bd-a808-1783c6047de3"/>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<text><![CDATA[Mengetahui,]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="4" y="30" width="56" height="15" uuid="e15b4722-8d01-4866-a000-30ff0160a1ef"/>
+				<reportElement x="4" y="30" width="70" height="15" uuid="e15b4722-8d01-4866-a000-30ff0160a1ef"/>
 				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA["Madiun, "]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{nama_org}+", "]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="460" y="118" width="81" height="13" uuid="40b5d71f-e3e3-414d-a321-f2f91c588154"/>
+				<reportElement x="1" y="116" width="108" height="13" uuid="a886d1da-8e25-4c89-beaf-286161f3f4d5"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA["(Eko Purnomo)"]]></textFieldExpression>
+				<textFieldExpression><![CDATA["("+$F{admin_a}+")"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="5" y="131" width="104" height="15" uuid="734b0065-e189-4099-be39-ffe420af1bb1"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["Adm A"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="415" y="131" width="139" height="15" uuid="1bab26d3-a82a-4e89-963a-532c473a3aaa"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["Branch Manager"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="415" y="118" width="139" height="13" uuid="57bb63eb-7d7e-4605-b1a2-311b88ed0fd8"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA["("+$F{bm}+")"]]></textFieldExpression>
 			</textField>
 		</band>
 	</summary>

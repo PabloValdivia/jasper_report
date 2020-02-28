@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="BranchGiro" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="59be8692-2f75-4ebf-a059-b6d5cbfb83e3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT * FROM (
+	SELECT DISTINCT(sr.name) as rayon, sr.name as ket, null as bank, null as daerah, null as no_bg, CAST('2019-10-10' as date) as tgl_doc,
+	       CAST('2019-10-10' as date) as tgl_jt, 0 as amount, 0 as tot_amount, 0 as flag
+	FROM tdi_postdatedcheck_line pl
+	INNER JOIN c_invoice i ON i.c_invoice_id=pl.c_invoice_id
+	INNER JOIN c_salesregion sr ON sr.c_salesregion_id=i.c_salesregion_id
+UNION ALL
+	--Detail Transaksi Giro per-Rayon
+	SELECT sr.name as rayon, bp.name as ket, p.bankname as bank, UPPER(c.name) as daerah, p.girono as no_bg, p.documentdate, pl.duedate as tgl_jt,
+	       pl.amount, 0, 1 as flag
+	FROM tdi_postdatedcheck_line pl
+	INNER JOIN tdi_postdatedcheck p ON p.tdi_postdatedcheck_id=pl.tdi_postdatedcheck_id
+	INNER JOIN c_invoice i ON i.c_invoice_id=pl.c_invoice_id
+	INNER JOIN c_bpartner bp ON bp.c_bpartner_id=p.c_bpartner_id
+	INNER JOIN c_salesregion sr ON sr.c_salesregion_id=i.c_salesregion_id
+	INNER JOIN c_bpartner_location bpl ON bpl.c_bpartner_location_id=i.c_bpartner_location_id
+	INNER JOIN c_location l ON l.c_location_id=bpl.c_location_id
+	INNER JOIN c_city c ON c.c_city_id=l.c_city_id
+UNION ALL
+	--Total GIRO per-Rayon
+	SELECT sr.name as rayon, null as ket, null as bank, null as daerah, null as no_bg, CAST('2019-10-10' as date) as tgl_doc, CAST('2019-10-10' as date) as tgl_jt,
+		   0, SUM(pl.amount) as amount, 2 as flag
+	FROM tdi_postdatedcheck_line pl
+	INNER JOIN tdi_postdatedcheck p ON p.tdi_postdatedcheck_id=pl.tdi_postdatedcheck_id
+	INNER JOIN c_invoice i ON i.c_invoice_id=pl.c_invoice_id
+	INNER JOIN c_bpartner bp ON bp.c_bpartner_id=p.c_bpartner_id
+	INNER JOIN c_salesregion sr ON sr.c_salesregion_id=i.c_salesregion_id
+	INNER JOIN c_bpartner_location bpl ON bpl.c_bpartner_location_id=i.c_bpartner_location_id
+	INNER JOIN c_location l ON l.c_location_id=bpl.c_location_id
+	INNER JOIN c_city c ON c.c_city_id=l.c_city_id
+	GROUP BY sr.name
+) as lapgiro_belumcair
+WHERE tgl_doc BETWEEN $P{start_date} AND $P{end_date}
+ORDER BY rayon, flag, ket, no_bg]]>
+	</queryString>
+	<field name="rayon" class="java.lang.String"/>
+	<field name="ket" class="java.lang.String"/>
+	<field name="bank" class="java.lang.String"/>
+	<field name="daerah" class="java.lang.String"/>
+	<field name="no_bg" class="java.lang.String"/>
+	<field name="tgl_doc" class="java.sql.Timestamp"/>
+	<field name="tgl_jt" class="java.sql.Timestamp"/>
+	<field name="amount" class="java.math.BigDecimal"/>
+	<field name="tot_amount" class="java.math.BigDecimal"/>
+	<field name="flag" class="java.lang.Integer"/>
+	<variable name="tot_amount_1" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{tot_amount}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="91" splitType="Stretch">
+			<textField>
+				<reportElement x="147" y="0" width="260" height="20" uuid="ffdbd585-0dfa-46a2-b34f-2a63454036f6"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["PT.TUNGGAL DJAJA INDAH"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="147" y="20" width="260" height="20" uuid="67e23175-5059-4e1e-950d-330693fb455c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["CAB. MADIUN"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="137" y="40" width="283" height="20" uuid="898c1212-190f-48cd-b123-f577a37ee79e"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["BILYET GIRO & SLIP YANG BELUM CAIR"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="104" y="60" width="89" height="20" uuid="a67c7dfe-19ad-4b51-9c0b-58aa6760ee87"/>
+				<textElement verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["PERIODE :"]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd MMMMM yyyy">
+				<reportElement x="193" y="60" width="132" height="20" uuid="bd2f0cab-c494-4472-9c99-f909737a5f0d"/>
+				<textElement verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd MMMMM yyyy">
+				<reportElement x="340" y="60" width="133" height="20" uuid="ceefaa93-3b60-4ef3-9242-83b61e781b39"/>
+				<textElement verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{end_date}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="313" y="60" width="27" height="20" uuid="cd23bdd5-b821-43e2-8bda-2654b90f16ca"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14"/>
+				</textElement>
+				<textFieldExpression><![CDATA["s/d"]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="100" height="20" uuid="61f148c8-ca72-46d0-b2ab-2065f3aabe47"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[KETERANGAN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="0" width="62" height="20" uuid="b3e01706-efda-4641-be76-ec77508fe8fc"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[BANK]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="228" y="0" width="72" height="20" uuid="d5585fc8-3630-4fe5-80be-a120339930c0"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[No. BG]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="300" y="0" width="72" height="20" uuid="f9a73978-bb30-4a45-81a1-e3660a806ecf"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[TGL JT]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="371" y="0" width="87" height="20" uuid="fbb88e1b-bd01-4965-864c-b9d39dc412ab"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Rp.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="457" y="0" width="100" height="20" uuid="0e21b2d4-404b-4e74-8b8b-1a2b6ee7df40"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[TOTAL]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="162" y="0" width="67" height="20" uuid="0b6a1de2-66f3-4c94-a748-e6035cba510b"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[DAERAH]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="100" height="20" uuid="6448e649-33eb-4ddf-b4ca-e593e7ab0a72"/>
+				<box leftPadding="3">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{ket}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="99" y="0" width="63" height="20" uuid="c5c0d10b-c771-464a-baf6-0726f32945e0"/>
+				<box leftPadding="3">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{bank}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="229" y="0" width="72" height="20" uuid="63c7c9a1-82aa-4e3d-bbb3-7a333500d41b"/>
+				<box leftPadding="3">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{no_bg}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yy" isBlankWhenNull="true">
+				<reportElement x="300" y="0" width="72" height="20" uuid="c48f8d46-a0c3-4e2f-ab26-858aa2527c3d"/>
+				<box>
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{flag}==1 ? $F{tgl_jt} : ""]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="371" y="0" width="87" height="20" uuid="0138f0fc-d5a2-41c1-a4a3-402106823d6a"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{flag}==1 ? $F{amount} : ""]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="457" y="0" width="100" height="20" uuid="37e64117-1f66-44f4-9932-a7016b7acfca"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{flag}==2 ? $F{tot_amount} : ""]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="162" y="0" width="67" height="20" uuid="6ceec671-97d2-4179-ba6d-f53b127a875c"/>
+				<box leftPadding="3">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{daerah}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<lastPageFooter>
+		<band height="101">
+			<textField>
+				<reportElement x="376" y="81" width="81" height="15" uuid="9a5ba383-a8ba-4a01-b2ae-224a73a92883"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["Adm B"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="95" y="80" width="81" height="15" uuid="9bafdc09-8e26-47ae-b1b5-fa0da9f90752"/>
+				<textElement textAlignment="Center"/>
+				<textFieldExpression><![CDATA["BM Madiun"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="376" y="1" width="81" height="13" uuid="38192838-a3c7-4612-a44a-db9e2f1ad240"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Diterima Oleh,]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="95" y="2" width="81" height="13" uuid="f495465f-fc90-4118-95ba-ee8a638426c7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<text><![CDATA[Diserahkan,]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="95" y="67" width="81" height="13" uuid="3e515266-c052-41e8-bd1b-30caa3d3609c"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA["(Eko Purnomo)"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="376" y="67" width="81" height="13" uuid="dd736daf-026f-4cfd-bc55-62359ca3e9a3"/>
+				<box>
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA["(Fitri)"]]></textFieldExpression>
+			</textField>
+		</band>
+	</lastPageFooter>
+	<summary>
+		<band height="20" splitType="Stretch">
+			<textField pattern="#,##0.00">
+				<reportElement x="457" y="0" width="100" height="20" uuid="cec42091-f3bb-4b49-856f-7906d73ee1b7"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{tot_amount_1}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="229" y="0" width="229" height="20" uuid="066ff8be-31dd-4b1f-b52c-717f927c209a"/>
+				<box leftPadding="5" rightPadding="5">
+					<topPen lineWidth="1.0"/>
+					<leftPen lineWidth="1.0"/>
+					<bottomPen lineWidth="1.0"/>
+					<rightPen lineWidth="1.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[Total Slip dan BG yang belum cair]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>

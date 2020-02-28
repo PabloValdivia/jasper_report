@@ -2,20 +2,24 @@
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="SuratJalanCbgLama" language="groovy" pageWidth="612" pageHeight="793" columnWidth="598" leftMargin="7" rightMargin="7" topMargin="20" bottomMargin="7" isFloatColumnFooter="true" uuid="7cf4dfa9-bd61-4e46-83bc-53c12e2a51dc">
 	<property name="ireport.zoom" value="1.3310000000000004"/>
 	<property name="ireport.x" value="0"/>
-	<property name="ireport.y" value="25"/>
+	<property name="ireport.y" value="0"/>
 	<parameter name="RECORD_ID" class="java.lang.Integer">
 		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
 	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["D:\\Jobs\\Documents\\JasperReport\\"]]></defaultValueExpression>
+	</parameter>
 	<queryString>
-		<![CDATA[SELECT row_number() over() as row_no,
-	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, o.dateordered, o.poreference, sr.name as rayon,
+		<![CDATA[SELECT row_number() over(ORDER BY p.name) as row_no, io.m_inout_id,
+	io.ad_client_id, io.ad_org_id, io.documentno, io.description, io.movementdate, o.documentno as doc_corder, o.dateordered, o.poreference, --poreference gak digawe jare bu hary
+io.nomorpo, sr.name as rayon,
     bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
-	bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
-	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, 	p.description as productnamex, --productnamex gk dipake
+	bp.name as bp_name, l.address1 as bp_address, l.isprinted, UPPER(c.name) as bp_city,
+	bpl.name as locationname, iol.qtyentered, iol.description as descinoutline, uo.name as uomname, 	p.name as productnamex, --productnamex gk dipake
 	CASE
 		WHEN iol.c_uom_id=uc.c_uom_to_id THEN p.description
 		ELSE p.name
-	END as productname,
+	END as productname, --dulu nama skrg deskripsi
 	(SELECT SUM(qtyentered /
 		case
 			when (iol.c_uom_id = p.c_uom_id) and (qtyentered > uc.dividerate) then uc.dividerate
@@ -38,11 +42,8 @@
 	 WHEN bpl.iswp0='Y' THEN 'WP0'
 	 ELSE 'nope'
 	END as sts_wp, --gw kasih CASE karena males ganti kondisi di jaspernya wkwkwk
-	(SELECT p2.name || ' : ' || ROUND(SUM(iol2.qtyentered))
-	 FROM m_inoutline iol2
-	 INNER JOIN m_product p2 ON p2.m_product_id=iol2.m_product_id
-	 WHERE iol2.m_inout_id=$P{RECORD_ID} AND iol2.isreward='Y'
-	 GROUP BY p2.name) as promo
+	null as promo,
+          TRIM(REPLACE(og.name, 'TDI', '')) as nama_cab --melepas TDI : TDI MADIUN menjadi MADIUN
 FROM m_inout io
 INNER JOIN c_order o ON io.c_order_id = o.c_order_id
 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
@@ -54,9 +55,17 @@ INNER JOIN m_inoutline iol ON io.m_inout_id = iol.m_inout_id
 INNER JOIN c_uom uo ON iol.c_uom_id = uo.c_uom_id
 INNER JOIN m_product p ON iol.m_product_id = p.m_product_id
 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<>'E']]>
+INNER JOIN ad_org og ON og.ad_org_id=io.ad_org_id
+WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<>'E'
+--cek jika product ada Conversionnya maka cek field isShowinProductInfo
+AND CASE
+    	WHEN uc.m_product_id is null THEN TRUE
+    	ELSE uc.isshowinproductinfo='Y'
+    END
+ORDER BY productname]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
+	<field name="m_inout_id" class="java.math.BigDecimal"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
 	<field name="ad_org_id" class="java.math.BigDecimal"/>
 	<field name="documentno" class="java.lang.String"/>
@@ -65,6 +74,7 @@ WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<
 	<field name="doc_corder" class="java.lang.String"/>
 	<field name="dateordered" class="java.sql.Timestamp"/>
 	<field name="poreference" class="java.lang.String"/>
+	<field name="nomorpo" class="java.lang.String"/>
 	<field name="rayon" class="java.lang.String"/>
 	<field name="name2" class="java.lang.String"/>
 	<field name="bp_npwp_name" class="java.lang.String"/>
@@ -88,6 +98,7 @@ WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<
 	<field name="sts_wpx" class="java.lang.String"/>
 	<field name="sts_wp" class="java.lang.String"/>
 	<field name="promo" class="java.lang.String"/>
+	<field name="nama_cab" class="java.lang.String"/>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
@@ -136,7 +147,7 @@ WHERE io.m_inout_id = $P{RECORD_ID} AND iol.isfullreturn<>'Y' AND p.producttype<
 				<textElement>
 					<font fontName="Arial" size="9" isStrikeThrough="false"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{poreference}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{nomorpo}]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement x="7" y="79" width="47" height="11" uuid="514a6dca-a8d2-4dde-bbe3-9dbe5a01d9b0"/>
@@ -287,15 +298,36 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<textFieldExpression><![CDATA[$F{sts_wp}=="WP0"?" ":":"]]></textFieldExpression>
 			</textField>
+			<textField>
+				<reportElement x="53" y="69" width="12" height="11" uuid="3061127a-a9bc-4d16-b673-6ec7ae309728"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=="Y"?":":" "]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="53" y="59" width="12" height="11" uuid="1780f994-e748-4417-ac74-fafc4065b3f7"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=="Y"?":":" "]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="53" y="79" width="12" height="11" uuid="d312dfa5-60e3-42c1-945a-02b17458ede1"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{isprinted}=="Y"?":":" "]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageHeader>
 	<columnHeader>
 		<band height="37" splitType="Stretch"/>
 	</columnHeader>
 	<detail>
-		<band height="14" splitType="Stretch">
+		<band height="13" splitType="Stretch">
 			<textField>
-				<reportElement x="-2" y="2" width="28" height="11" uuid="466d0ef5-92e4-4e7f-8b72-68c8398cbd4f"/>
+				<reportElement x="-2" y="0" width="28" height="11" uuid="466d0ef5-92e4-4e7f-8b72-68c8398cbd4f"/>
 				<box rightPadding="3"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="9"/>
@@ -304,7 +336,7 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="70" y="2" width="45" height="11" uuid="8adc98fa-5611-42ae-adf0-3089d3232899"/>
+				<reportElement x="70" y="0" width="45" height="11" uuid="8adc98fa-5611-42ae-adf0-3089d3232899"/>
 				<box leftPadding="2"/>
 				<textElement verticalAlignment="Middle">
 					<font fontName="Arial" size="9"/>
@@ -313,15 +345,15 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textFieldExpression><![CDATA[$F{uomname}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="110" y="2" width="329" height="11" uuid="020ad8d4-6966-40f9-a381-a54e720fe3e5"/>
+				<reportElement x="107" y="0" width="329" height="11" uuid="020ad8d4-6966-40f9-a381-a54e720fe3e5"/>
 				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="9"/>
+					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{productname}]]></textFieldExpression>
 			</textField>
 			<textField pattern="#,##0">
-				<reportElement x="33" y="2" width="35" height="11" uuid="55df4d17-7f35-4861-b9d3-332d05e48027"/>
+				<reportElement x="33" y="0" width="35" height="11" uuid="55df4d17-7f35-4861-b9d3-332d05e48027"/>
 				<box rightPadding="3"/>
 				<textElement textAlignment="Right" verticalAlignment="Middle">
 					<font fontName="Arial" size="9"/>
@@ -329,18 +361,18 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<textFieldExpression><![CDATA[$F{qtyentered}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="445" y="2" width="154" height="11" uuid="835a02fd-8481-4179-884f-28a54c692e8c"/>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="443" y="0" width="154" height="11" uuid="835a02fd-8481-4179-884f-28a54c692e8c"/>
 				<textElement verticalAlignment="Middle">
-					<font fontName="Arial" size="9"/>
+					<font fontName="Arial" size="8"/>
 					<paragraph lineSpacing="Fixed"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{row_no}==1 ? $F{promo} : " "]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{row_no}==1 ? $F{description} : " "]]></textFieldExpression>
 			</textField>
 		</band>
 	</detail>
 	<columnFooter>
-		<band height="4" splitType="Stretch"/>
+		<band height="6" splitType="Stretch"/>
 	</columnFooter>
 	<pageFooter>
 		<band height="243" splitType="Stretch">
@@ -358,13 +390,6 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				</textElement>
 				<textFieldExpression><![CDATA[$F{koli}]]></textFieldExpression>
 			</textField>
-			<staticText>
-				<reportElement x="244" y="7" width="63" height="11" uuid="640250dd-c3d2-402f-bacf-c9b945a7891e"/>
-				<textElement>
-					<font fontName="Arial" size="9"/>
-				</textElement>
-				<text><![CDATA[KOLI/TONASE]]></text>
-			</staticText>
 			<textField pattern="#,##0.00">
 				<reportElement x="328" y="7" width="33" height="11" uuid="bc155e3d-3033-4e9c-9ac0-6777aed655f5"/>
 				<textElement>
@@ -377,15 +402,34 @@ N.P.W.P/N.P.P.K.P : 01.233.303.5-641.000 Tanggal Pengukuhan : 15 Februari 1985]]
 				<textElement>
 					<font fontName="Arial" size="9"/>
 				</textElement>
-				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="407" y="34" width="36" height="15" uuid="01fd43b8-50bd-4745-95fb-0ce03f873491"/>
+				<reportElement x="236" y="7" width="71" height="11" uuid="cd397fba-5f6f-475e-b19e-b18ae6f8014b"/>
 				<textElement>
 					<font fontName="Arial" size="9"/>
 				</textElement>
-				<text><![CDATA[Madiun, ]]></text>
+				<text><![CDATA[KOLI/TONASE :]]></text>
 			</staticText>
+			<subreport>
+				<reportElement positionType="Float" x="4" y="5" width="214" height="52" uuid="bfd893e2-d163-40a0-9a7f-018ac0d31ad8"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="RECORD_ID">
+					<subreportParameterExpression><![CDATA[$P{RECORD_ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "SJCbgLama-Madiun2Sub.jasper"]]></subreportExpression>
+			</subreport>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="392" y="34" width="51" height="15" uuid="57504f7d-4010-4922-8972-6168ff733027"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nama_cab}+","]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageFooter>
 	<summary>

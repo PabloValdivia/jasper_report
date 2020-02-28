@@ -6,8 +6,8 @@
 	<parameter name="RECORD_ID" class="java.lang.Integer"/>
 	<queryString>
 		<![CDATA[-- PROFORMA INVOICE BARU
-SELECT row_number() over() as row_no, uc.isprintprice, i.c_invoice_id, i.documentno,
-	i.ad_client_id, i.ad_org_id, i.documentno, i.description, i.dateinvoiced, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon,
+SELECT row_number() over() as row_no, uc.isprintprice, o.c_order_id, o.documentno, io.documentno as no_sj,
+	o.ad_client_id, o.ad_org_id, o.description, o.dateordered, o.documentno as no_order, o.dateordered, o.poreference, sr.name as rayon, io.movementdate,
        bp.name2, bpl.npwpname as bp_npwp_name, l.address3 as bp_npwp_address, bpl.npwp as bp_npwp_id,
 	   bp.name as bp_name, l.address1 as bp_address, l.isprinted, c.name as bp_city,
 	   bpl.name as locationname, uo.name as uomnamex,
@@ -16,50 +16,64 @@ SELECT row_number() over() as row_no, uc.isprintprice, i.c_invoice_id, i.documen
 	    WHERE p1.m_product_id=p.m_product_id) as uomname,
 	   p.name as productname,
 	   CASE
-	   	WHEN uc.isprintprice='Y' THEN il.qtyentered
-		ELSE il.qtyinvoiced
+	   	WHEN uc.isprintprice='Y' THEN iol.qtyentered
+		ELSE iol.movementqty
 	   END as qty,
 	   CASE
-	   	WHEN uc.isprintprice='Y' THEN il.priceentered
-		ELSE il.pricelist
+	   	WHEN uc.isprintprice='Y' THEN ol.priceentered
+		ELSE ol.pricelist
 	   END as harga_satuan,
-	   il.rewarddiscount as rwd_disc,
-	   il.additionaldiscount as add_disc, il.regulardiscount as reg_disc,
-	   il.priceentered as harga_jual,
+	   ol.rewarddiscount as rwd_disc,
+	   ol.additionaldiscount as add_disc, ol.regulardiscount as reg_disc,
+	   ol.priceentered as harga_jual,
 	   (SELECT COUNT(m_inoutline_id) FROM m_inoutline WHERE m_inout_id=io.m_inout_id AND isreward<>'Y') as koli,
 	   (SELECT SUM(weight) FROM m_inoutline WHERE m_inout_id=$P{RECORD_ID} AND isreward<>'Y') as tonase,
-	  (i.dateinvoiced+pt.netdays) as duedate, bl.name as sts_wp,
-	  (il.pricelist-(il.pricelist*il.regulardiscount)/100) as hrg_jual_proforma
+	  (o.dateordered+pt.netdays) as duedate, bl.name as sts_wp,
+	  CASE
+	   	WHEN uc.isprintprice='Y' THEN iol.qtyentered
+		ELSE iol.movementqty
+	  END  *
+	  (ol.pricelist-(ol.pricelist*ol.regulardiscount)/100) as hrg_jual_proforma,
+	  TRIM(REPLACE(og.name, 'TDI', '')) as nama_cab --melepas TDI : TDI MADIUN menjadi MADIUN
 FROM m_inout io
 INNER JOIN m_inoutline iol on iol.m_inout_id=io.m_inout_id
 INNER JOIN c_order o on o.c_order_id=io.c_order_id
-INNER JOIN c_invoiceline il on il.m_inoutline_id=iol.m_inoutline_id
-INNER JOIN c_invoice i on i.c_invoice_id=il.c_invoice_id
+INNER JOIN c_orderline ol on ol.c_orderline_id=iol.c_orderline_id
+--INNER JOIN c_invoiceline il on il.m_inoutline_id=iol.m_inoutline_id
+--INNER JOIN c_invoice i on i.c_invoice_id=il.c_invoice_id
 INNER JOIN m_product p on p.m_product_id=iol.m_product_id
-INNER JOIN c_bpartner_location bl ON bl.c_bpartner_location_id=i.c_bpartner_location_id
-INNER JOIN c_uom uo ON il.c_uom_id = uo.c_uom_id
+INNER JOIN c_bpartner_location bl ON bl.c_bpartner_location_id=o.c_bpartner_location_id
+INNER JOIN c_uom uo ON ol.c_uom_id = uo.c_uom_id
 INNER JOIN c_salesregion sr ON o.c_salesregion_id = sr.c_salesregion_id
-INNER JOIN c_bpartner bp ON i.c_bpartner_id = bp.c_bpartner_id
-INNER JOIN c_bpartner_location bpl ON i.c_bpartner_location_id = bpl.c_bpartner_location_id
+INNER JOIN c_bpartner bp ON o.c_bpartner_id = bp.c_bpartner_id
+INNER JOIN c_bpartner_location bpl ON o.c_bpartner_location_id = bpl.c_bpartner_location_id
 INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
 INNER JOIN c_city c ON l.c_city_id = c.c_city_id
 LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
-INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
+INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=o.c_paymentterm_id
+INNER JOIN ad_org og ON og.ad_org_id=io.ad_org_id
 WHERE io.m_inout_id = $P{RECORD_ID}
-AND iol.isreward<>'Y']]>
+AND iol.isreward<>'Y'
+--cek jika product ada Conversionnya maka cek field isShowinProductInfo
+AND CASE
+    	WHEN uc.m_product_id is null THEN TRUE
+    	ELSE uc.isshowinproductinfo='Y'
+    END
+AND iol.isfullreturn<>'Y' AND p.producttype<>'E']]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
 	<field name="isprintprice" class="java.lang.String"/>
-	<field name="c_invoice_id" class="java.math.BigDecimal"/>
+	<field name="c_order_id" class="java.math.BigDecimal"/>
 	<field name="documentno" class="java.lang.String"/>
+	<field name="no_sj" class="java.lang.String"/>
 	<field name="ad_client_id" class="java.math.BigDecimal"/>
 	<field name="ad_org_id" class="java.math.BigDecimal"/>
 	<field name="description" class="java.lang.String"/>
-	<field name="dateinvoiced" class="java.sql.Timestamp"/>
-	<field name="no_order" class="java.lang.String"/>
 	<field name="dateordered" class="java.sql.Timestamp"/>
+	<field name="no_order" class="java.lang.String"/>
 	<field name="poreference" class="java.lang.String"/>
 	<field name="rayon" class="java.lang.String"/>
+	<field name="movementdate" class="java.sql.Timestamp"/>
 	<field name="name2" class="java.lang.String"/>
 	<field name="bp_npwp_name" class="java.lang.String"/>
 	<field name="bp_npwp_address" class="java.lang.String"/>
@@ -83,6 +97,7 @@ AND iol.isreward<>'Y']]>
 	<field name="duedate" class="java.sql.Date"/>
 	<field name="sts_wp" class="java.lang.String"/>
 	<field name="hrg_jual_proforma" class="java.math.BigDecimal"/>
+	<field name="nama_cab" class="java.lang.String"/>
 	<variable name="hrg_jual_proforma_1" class="java.math.BigDecimal" calculation="Sum">
 		<variableExpression><![CDATA[$F{hrg_jual_proforma}]]></variableExpression>
 	</variable>
@@ -103,13 +118,6 @@ AND iol.isreward<>'Y']]>
 					<font fontName="Arial" size="12"/>
 				</textElement>
 				<text><![CDATA[PT. TUNGGAL DJAJA INDAH]]></text>
-			</staticText>
-			<staticText>
-				<reportElement x="119" y="13" width="115" height="20" uuid="b66f211b-ae0c-448d-a331-da46990bba18"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[MADIUN - INDONESIA]]></text>
 			</staticText>
 			<staticText>
 				<reportElement x="346" y="0" width="230" height="97" uuid="a2dde977-fc6f-42d3-a311-6688b45688e4"/>
@@ -280,21 +288,21 @@ AND iol.isreward<>'Y']]>
 				</textElement>
 				<text><![CDATA[BUKAN UNTUK TAGIHAN]]></text>
 			</staticText>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="415" y="20" width="86" height="13" uuid="3cac759b-30ae-43d5-baca-298dfbf3149a"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{documentno}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{no_sj}]]></textFieldExpression>
 			</textField>
-			<textField pattern="dd/MM/yyyy">
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
 				<reportElement x="415" y="33" width="86" height="13" uuid="0136e3a5-7c2f-4c57-ad98-2dfc8ccd4370"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$F{dateinvoiced}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{movementdate}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="415" y="46" width="86" height="13" uuid="deed07b4-6ecb-4efd-884a-fe3048030235"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
@@ -308,14 +316,14 @@ AND iol.isreward<>'Y']]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{dateordered}]]></textFieldExpression>
 			</textField>
-			<textField>
+			<textField isBlankWhenNull="true">
 				<reportElement x="415" y="72" width="86" height="13" uuid="de7772a2-6f49-4d0a-a115-43cfde2719bf"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{poreference}]]></textFieldExpression>
 			</textField>
-			<textField pattern="dd/MM/yyyy">
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
 				<reportElement x="415" y="84" width="86" height="13" uuid="5e3500d1-6d18-4b35-b8ae-dca1e949e0fb"/>
 				<textElement>
 					<font fontName="Arial" size="8"/>
@@ -328,6 +336,11 @@ AND iol.isreward<>'Y']]>
 					<font fontName="Arial" size="10"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{rayon}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="84" y="15" width="182" height="20" uuid="ad4f559c-a70f-4e9c-bbff-110f3b4977f2"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{nama_cab} + " - INDONESIA"]]></textFieldExpression>
 			</textField>
 		</band>
 	</title>
@@ -473,7 +486,7 @@ AND iol.isreward<>'Y']]>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{harga_satuan}]]></textFieldExpression>
 			</textField>
-			<textField pattern="#,##0.00">
+			<textField pattern="#,##0">
 				<reportElement x="346" y="0" width="119" height="10" uuid="b3336b22-7cba-452c-b39b-28f9f062818f"/>
 				<box>
 					<leftPen lineWidth="0.0"/>
@@ -615,13 +628,6 @@ AND iol.isreward<>'Y']]>
 				<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="293" y="30" width="36" height="15" uuid="e53b0956-3c98-4f94-bb80-28093875362e"/>
-				<textElement>
-					<font fontName="Arial" size="8"/>
-				</textElement>
-				<text><![CDATA[Madiun, ]]></text>
-			</staticText>
-			<staticText>
 				<reportElement x="277" y="97" width="132" height="20" uuid="0975696e-ffde-46a1-a408-dd6a9a9ffcf2"/>
 				<textElement textAlignment="Center" verticalAlignment="Bottom"/>
 				<text><![CDATA[( -------------------------------- )]]></text>
@@ -674,6 +680,13 @@ AND iol.isreward<>'Y']]>
 				</box>
 				<text><![CDATA[]]></text>
 			</staticText>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="260" y="30" width="59" height="15" uuid="86396e16-cfaf-42fe-90d7-6d808e28a165"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nama_cab}+","]]></textFieldExpression>
+			</textField>
 		</band>
 	</pageFooter>
 	<summary>

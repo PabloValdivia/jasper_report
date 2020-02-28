@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="POCabang" language="groovy" pageWidth="595" pageHeight="793" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="6b3d9819-f24d-4da3-a58c-5991c7d6e83f">
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="POCabang" language="groovy" pageWidth="595" pageHeight="793" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="8" bottomMargin="8" uuid="6b3d9819-f24d-4da3-a58c-5991c7d6e83f">
 	<property name="ireport.zoom" value="1.2100000000000002"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
@@ -7,10 +7,28 @@
 	<queryString>
 		<![CDATA[-- Ini yg dipakai
 SELECT
-  	   row_number() over() as row_no, m.documentno, m.documentdate, m.POreference,
-	   p.value, p.name as nama_brg, ml.c_uom_id, u.name as kemasan, ml.qtydelivered as order_unit,
+  	   row_number() over(ORDER BY p.name) as row_no, m.isapprovedbm, m.documentno, m.documentdate,
+	   m.POreference,
+	   p.value, p.name as nama_brg, ml.c_uom_id, u.name as kemasan,
+	   ml.requestqty as order_unit,
 	   ml.qty as order_dospail,
-	   ml.qtyonhand, ml.avgqtyinvoiced,
+	   CASE
+	     WHEN ml.c_uom_id<>p.c_uom_id
+	     THEN ROUND((ml.qtyonhand/(SELECT uc.dividerate
+		          FROM c_uom_conversion uc
+			WHERE uc.m_product_id=ml.m_product_id)),0)
+	     ELSE ml.qtyonhand
+	   END as qtyonhand,
+	   --dikonversi jadi satuan besar kata Galih (25 Nov 2019) jika di master product hanya 1 satuan maka langsung tampilkan aja qtyonhand nya
+	   CASE
+	     WHEN ml.c_uom_id<>p.c_uom_id
+	     THEN ROUND((ml.avgsalesqty/(SELECT uc.dividerate
+		          FROM c_uom_conversion uc
+			WHERE uc.m_product_id=ml.m_product_id)),0)
+	     ELSE ml.avgsalesqty
+	   END as avgsalesqty,
+	   --dikonversi jadi satuan besar kata Galih (25 Nov 2019) jika di master product hanya 1 satuan maka langsung tampilkan aja avgsalesqty nya
+	   ml.description as desc_line,
 	   CASE
 	   	WHEN ml.c_uom_id<>p.c_uom_id THEN round(ml.qty*(SELECT uc.dividerate FROM c_uom_conversion uc WHERE uc.m_product_id=ml.m_product_id)) --satuan besar
 		ELSE ml.qty --satuan kecil
@@ -20,14 +38,16 @@ SELECT
 	   		WHEN ml.c_uom_id<>p.c_uom_id THEN round(ml.qty*(SELECT uc.dividerate FROM c_uom_conversion uc WHERE uc.m_product_id=ml.m_product_id)) --satuan besar
 			ELSE ml.qty --satuan kecil
 	   	END *
-	   	p.weight) as bruto_weight
+	   	p.netweight) as net_weight
 FROM TDI_BranchRequest m
 INNER JOIN TDI_BranchRequest_Line ml ON ml.TDI_BranchRequest_id=m.TDI_BranchRequest_id
 INNER JOIN m_product p ON p.m_product_id=ml.m_product_id
 INNER JOIN c_uom u ON u.c_uom_id=ml.c_uom_id
-WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
+WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}
+ORDER BY p.name]]>
 	</queryString>
 	<field name="row_no" class="java.lang.Long"/>
+	<field name="isapprovedbm" class="java.lang.String"/>
 	<field name="documentno" class="java.lang.String"/>
 	<field name="documentdate" class="java.sql.Timestamp"/>
 	<field name="poreference" class="java.lang.String"/>
@@ -38,23 +58,24 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 	<field name="order_unit" class="java.math.BigDecimal"/>
 	<field name="order_dospail" class="java.math.BigDecimal"/>
 	<field name="qtyonhand" class="java.math.BigDecimal"/>
-	<field name="avgqtyinvoiced" class="java.math.BigDecimal"/>
+	<field name="avgsalesqty" class="java.math.BigDecimal"/>
+	<field name="desc_line" class="java.lang.String"/>
 	<field name="xsat" class="java.math.BigDecimal"/>
 	<field name="weight" class="java.math.BigDecimal"/>
-	<field name="bruto_weight" class="java.math.BigDecimal"/>
+	<field name="net_weight" class="java.math.BigDecimal"/>
 	<variable name="bruto_weight_1" class="java.math.BigDecimal" calculation="Sum">
-		<variableExpression><![CDATA[$F{bruto_weight}]]></variableExpression>
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="net_weight_1" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{net_weight}]]></variableExpression>
 	</variable>
 	<background>
 		<band splitType="Stretch"/>
 	</background>
-	<title>
-		<band height="10" splitType="Stretch"/>
-	</title>
 	<pageHeader>
-		<band height="153" splitType="Stretch">
+		<band height="142" splitType="Stretch">
 			<staticText>
-				<reportElement x="0" y="3" width="555" height="115" uuid="c5c221de-fdd3-4d04-9118-814184f252cd"/>
+				<reportElement x="0" y="3" width="555" height="105" uuid="c5c221de-fdd3-4d04-9118-814184f252cd"/>
 				<box>
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -89,7 +110,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[O R D E R]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="278" y="31" width="277" height="87" uuid="6960078d-6237-4155-a364-715b1fb12ce0"/>
+				<reportElement x="278" y="31" width="277" height="77" uuid="6960078d-6237-4155-a364-715b1fb12ce0"/>
 				<box topPadding="13" leftPadding="20" rightPadding="0">
 					<topPen lineWidth="1.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -97,25 +118,26 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement verticalAlignment="Top"/>
-				<text><![CDATA[Kepada Yth.]]></text>
+				<text><![CDATA[]]></text>
 			</staticText>
 			<textField>
-				<reportElement x="455" y="6" width="100" height="23" uuid="78389aff-fb27-4935-bd3b-3021fb4796a8"/>
-				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA["NO: "+$F{poreference}]]></textFieldExpression>
+				<reportElement x="409" y="6" width="146" height="23" uuid="78389aff-fb27-4935-bd3b-3021fb4796a8"/>
+				<box rightPadding="5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{poreference}==null ? "NO: "+$F{documentno} : "NO: "+$F{poreference}]]></textFieldExpression>
 			</textField>
 			<textField pattern="dd/MM/yyyy">
-				<reportElement x="199" y="94" width="79" height="20" uuid="a3e998f3-d6b1-43a0-96cd-5acb8154fa0e"/>
+				<reportElement x="199" y="88" width="79" height="20" uuid="a3e998f3-d6b1-43a0-96cd-5acb8154fa0e"/>
 				<textElement verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{documentdate}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement x="138" y="94" width="61" height="20" uuid="4e65545a-1167-47c2-8994-4c548c78f8d5"/>
+				<reportElement x="138" y="88" width="61" height="20" uuid="4e65545a-1167-47c2-8994-4c548c78f8d5"/>
 				<textElement verticalAlignment="Middle"/>
 				<text><![CDATA[Tgl Order :]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="0" y="118" width="20" height="35" uuid="cc943e1c-6f09-4274-9267-5b43ee863519"/>
+				<reportElement x="0" y="107" width="20" height="35" uuid="cc943e1c-6f09-4274-9267-5b43ee863519"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -126,7 +148,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[No.]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="21" y="118" width="78" height="35" uuid="722f338e-ae4d-40ef-b581-66a08c217dee"/>
+				<reportElement x="21" y="107" width="78" height="35" uuid="722f338e-ae4d-40ef-b581-66a08c217dee"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -137,7 +159,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Item]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="99" y="118" width="166" height="35" uuid="28fa2f60-5d32-4890-a8c1-cb179fae3931"/>
+				<reportElement x="99" y="107" width="166" height="35" uuid="28fa2f60-5d32-4890-a8c1-cb179fae3931"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -148,7 +170,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Nama Barang]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="265" y="118" width="48" height="35" uuid="2cf6b01b-1f22-44de-ac69-2669c95ebc83"/>
+				<reportElement x="265" y="107" width="48" height="35" uuid="2cf6b01b-1f22-44de-ac69-2669c95ebc83"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -159,7 +181,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Kemasan]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="313" y="118" width="78" height="16" uuid="4180feb2-0d84-49b9-9cf5-236edde53e1d"/>
+				<reportElement x="313" y="107" width="78" height="16" uuid="4180feb2-0d84-49b9-9cf5-236edde53e1d"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -170,7 +192,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Order]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="313" y="134" width="37" height="19" uuid="91aa4e18-e21e-4ca1-b30d-6163f2c11b76"/>
+				<reportElement x="313" y="123" width="37" height="19" uuid="91aa4e18-e21e-4ca1-b30d-6163f2c11b76"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -181,7 +203,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Unit]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="350" y="134" width="41" height="19" uuid="651986de-74a5-4f39-b0c1-051c1cfa0a03"/>
+				<reportElement x="350" y="123" width="41" height="19" uuid="651986de-74a5-4f39-b0c1-051c1cfa0a03"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="1.0"/>
@@ -194,7 +216,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Dos/Pail]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="392" y="118" width="78" height="16" uuid="c68efcdd-9fc7-4686-998d-b193e78f7f6d"/>
+				<reportElement x="392" y="107" width="78" height="16" uuid="c68efcdd-9fc7-4686-998d-b193e78f7f6d"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -205,7 +227,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Dos/Pail]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="430" y="134" width="40" height="19" uuid="b0e8ad42-77f4-48e5-95d7-a7e96a788963"/>
+				<reportElement x="430" y="123" width="40" height="19" uuid="b0e8ad42-77f4-48e5-95d7-a7e96a788963"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -218,7 +240,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Rata-2]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="392" y="134" width="37" height="19" uuid="8ee6630a-f344-4216-82a2-e259af9ca2d4"/>
+				<reportElement x="392" y="123" width="37" height="19" uuid="8ee6630a-f344-4216-82a2-e259af9ca2d4"/>
 				<box>
 					<topPen lineWidth="0.0"/>
 					<leftPen lineWidth="0.0"/>
@@ -240,7 +262,7 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Item]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="470" y="118" width="85" height="35" uuid="2ab21d7e-4e32-4c86-b91a-9a3ba917d671"/>
+				<reportElement x="470" y="107" width="85" height="35" uuid="2ab21d7e-4e32-4c86-b91a-9a3ba917d671"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -253,9 +275,19 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[PT. TUNGGAL DJAJA INDAH JL. LETJEN SUPRAPTO SIDOARJO]]></text>
 			</staticText>
 			<staticText>
-				<reportElement x="8" y="94" width="113" height="20" uuid="98e3dab1-4f3e-4056-92d3-e1907202bb33"/>
+				<reportElement x="8" y="88" width="113" height="20" uuid="98e3dab1-4f3e-4056-92d3-e1907202bb33"/>
 				<textElement verticalAlignment="Middle"/>
 				<text><![CDATA[Pemasok : 99999]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="3" y="6" width="156" height="23" uuid="6de681ff-9300-44c9-a7e3-16e13374a0dd"/>
+				<box leftPadding="10"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{isapprovedbm}=='Y' ? "Approved by BM: YES" : "Approved by BM: NO"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="288" y="37" width="89" height="20" uuid="7f5d6170-5403-41ed-95dc-52eacd2e6c70"/>
+				<text><![CDATA[Kepada Yth.]]></text>
 			</staticText>
 		</band>
 	</pageHeader>
@@ -263,39 +295,43 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 		<band splitType="Stretch"/>
 	</columnHeader>
 	<detail>
-		<band height="20" splitType="Stretch">
+		<band height="15" splitType="Stretch">
 			<textField>
-				<reportElement x="0" y="0" width="20" height="20" uuid="6224f679-d502-46a8-afe1-b1758ff4ad34"/>
-				<box rightPadding="5">
+				<reportElement x="0" y="0" width="20" height="15" uuid="6224f679-d502-46a8-afe1-b1758ff4ad34"/>
+				<box rightPadding="3">
 					<leftPen lineWidth="1.0"/>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{row_no}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="21" y="0" width="78" height="20" uuid="53ca1260-6bf1-4bd3-aa1e-980fb1fa73a6"/>
+				<reportElement x="21" y="0" width="78" height="15" uuid="53ca1260-6bf1-4bd3-aa1e-980fb1fa73a6"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font size="9"/>
+					<font size="8"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="99" y="0" width="166" height="20" uuid="0147fa6c-d57f-4620-8de9-0d0f1d0e8521"/>
-				<box leftPadding="5">
+				<reportElement x="99" y="0" width="200" height="15" uuid="0147fa6c-d57f-4620-8de9-0d0f1d0e8521"/>
+				<box leftPadding="3">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<textElement verticalAlignment="Middle"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
 				<textFieldExpression><![CDATA[$F{nama_brg}]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement x="265" y="0" width="48" height="20" uuid="2ab56893-7975-4051-a1ad-0e1d7ead9e43"/>
+				<reportElement x="265" y="0" width="48" height="15" uuid="2ab56893-7975-4051-a1ad-0e1d7ead9e43"/>
 				<box>
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -303,8 +339,8 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<textElement textAlignment="Center" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{kemasan}]]></textFieldExpression>
 			</textField>
-			<textField pattern="###0">
-				<reportElement x="313" y="0" width="37" height="20" uuid="4edc5d28-71ec-4ac9-b563-c14a909bb524"/>
+			<textField pattern="###0" isBlankWhenNull="true">
+				<reportElement x="313" y="0" width="37" height="15" uuid="4edc5d28-71ec-4ac9-b563-c14a909bb524"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -312,8 +348,8 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{order_unit}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="350" y="0" width="41" height="20" uuid="5f317192-cc98-4dba-b4dd-db1cfc97552f"/>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement x="350" y="0" width="41" height="15" uuid="5f317192-cc98-4dba-b4dd-db1cfc97552f"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -321,8 +357,8 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{order_dospail}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="392" y="0" width="37" height="20" uuid="230df2f2-5651-46a4-892d-b771f35b8b0a"/>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement x="392" y="0" width="37" height="15" uuid="230df2f2-5651-46a4-892d-b771f35b8b0a"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
@@ -330,23 +366,26 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
 				<textFieldExpression><![CDATA[$F{qtyonhand}]]></textFieldExpression>
 			</textField>
-			<textField>
-				<reportElement x="430" y="0" width="40" height="20" uuid="d7694d8c-1482-46dc-af75-3139a9e00db6"/>
+			<textField pattern="#,##0">
+				<reportElement x="430" y="0" width="40" height="15" uuid="d7694d8c-1482-46dc-af75-3139a9e00db6"/>
 				<box rightPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
 				<textElement textAlignment="Right" verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$F{avgqtyinvoiced}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$F{avgsalesqty}==null ? "0" : $F{avgsalesqty}]]></textFieldExpression>
 			</textField>
-			<staticText>
-				<reportElement x="470" y="0" width="85" height="20" uuid="2f27d64a-e88c-42de-a4d1-6d08e819deec"/>
-				<box>
+			<textField isBlankWhenNull="true">
+				<reportElement x="470" y="0" width="85" height="15" uuid="69c6c7b1-cece-491b-8faa-664efcea10a1"/>
+				<box leftPadding="5">
 					<bottomPen lineWidth="1.0"/>
 					<rightPen lineWidth="1.0"/>
 				</box>
-				<text><![CDATA[]]></text>
-			</staticText>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{desc_line}]]></textFieldExpression>
+			</textField>
 		</band>
 	</detail>
 	<columnFooter>
@@ -402,9 +441,9 @@ WHERE m.TDI_BranchRequest_id = $P{RECORD_ID}]]>
 				<text><![CDATA[Mengetahui,]]></text>
 			</staticText>
 			<textField pattern="#,##0.00">
-				<reportElement x="76" y="0" width="100" height="20" uuid="92c2f01e-ab13-4133-9e6c-d3a575a3976d"/>
+				<reportElement x="76" y="0" width="100" height="20" uuid="456f7e14-665b-444b-94b0-bb9341960874"/>
 				<textElement verticalAlignment="Middle"/>
-				<textFieldExpression><![CDATA[$V{bruto_weight_1}]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$V{net_weight_1}]]></textFieldExpression>
 			</textField>
 		</band>
 	</summary>

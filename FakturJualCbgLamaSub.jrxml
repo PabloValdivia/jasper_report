@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FakturJualCbgLamaSub" language="groovy" pageWidth="300" pageHeight="300" columnWidth="300" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="e7a23859-a510-4d06-abe0-f8fa8096b982">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="RECORD_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[--Query invoice return SubReport
+SELECT
+	  CASE
+	   WHEN bpl.iswp0='Y'
+               THEN (SELECT i2.documentno FROM c_invoice i2
+                     WHERE c_invoice_id=ir.c_invoicereturn_id)
+	   ELSE (SELECT i2.documentno FROM c_invoice i2
+                   WHERE c_invoice_id=ir.c_invoicereturnwp_id)
+	  END as cn --dikasih CASE wp0=YES maka bla bla
+FROM c_invoice i
+--INNER JOIN c_invoiceline il on il.c_invoice_id=i.c_invoice_id
+--INNER JOIN c_invoice i on i.c_invoice_id=il.c_invoice_id
+--INNER JOIN m_product p on p.m_product_id=il.m_product_id
+INNER JOIN c_bpartner_location bl ON bl.c_bpartner_location_id=i.c_bpartner_location_id
+INNER JOIN c_salesregion sr ON i.c_salesregion_id = sr.c_salesregion_id
+INNER JOIN c_bpartner bp ON i.c_bpartner_id = bp.c_bpartner_id
+INNER JOIN c_bpartner_location bpl ON i.c_bpartner_location_id = bpl.c_bpartner_location_id
+INNER JOIN c_location l ON bpl.c_location_id = l.c_location_id
+INNER JOIN tdi_subdistrict sd ON sd.tdi_subdistrict_id=l.tdi_subdistrict_id
+INNER JOIN c_city c ON l.c_city_id = c.c_city_id
+--LEFT JOIN c_uom_conversion uc ON p.m_product_id = uc.m_product_id
+INNER JOIN c_paymentterm pt ON pt.c_paymentterm_id=i.c_paymentterm_id
+LEFT JOIN tdi_invoicereturn ir ON ir.c_invoice_id=i.c_invoice_id
+WHERE i.c_invoice_id = $P{RECORD_ID}
+--AND p.producttype<>'E'
+--AND il.c_charge_id is null]]>
+	</queryString>
+	<field name="cn" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<columnHeader>
+		<band height="11" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="100" height="11" uuid="0f236877-cfe3-4ac8-88bc-270b6fe7a340">
+					<printWhenExpression><![CDATA[$F{cn} != null]]></printWhenExpression>
+				</reportElement>
+				<textElement verticalAlignment="Middle">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Kredit Memo:]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="11" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="243" height="11" uuid="dd784f1e-860d-4e18-9b9a-487332048b2d"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cn}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

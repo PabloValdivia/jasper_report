@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="LapDisc" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isFloatColumnFooter="true" uuid="0d26ac94-d4ab-4ccc-9a26-7c6865cdfb03">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="AD_Org_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="start_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="end_date" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[--Paket Discount (Hasil udah disamakan dg RV Inv Cust Trx-Discount yg docstatus='CO') 17 Feb '20
+SELECT io.c_salesregion_id, sr.name as rayon,
+	   	ROUND(
+			SUM(ol.rewarddiscount / 100::numeric *
+				(ol.pricelist - ol.regulardiscount / 100::numeric * ol.pricelist) *
+				iol.movementqty)
+		, 2) AS sum_reward_disc, --cek lagi perhitungannya krn ini tidak pakai Invoice tapi pakai InOut dan InOutLine
+		ROUND(
+			SUM(ol.additionaldiscount / 100::numeric *
+						(ol.pricelist - ol.regulardiscount / 100::numeric *
+						 ol.pricelist - ol.rewarddiscount / 100::numeric *
+						 (ol.pricelist - ol.regulardiscount / 100::numeric * ol.pricelist)
+						) * iol.movementqty
+					)
+		, 2) AS sum_add_disc,
+	(SELECT name FROM ad_org WHERE ad_org_id=$P{AD_Org_ID}) as nama_cab
+FROM m_inoutline iol
+INNER JOIN m_inout io ON io.m_inout_id=iol.m_inout_id
+INNER JOIN c_orderline ol ON ol.c_orderline_id=iol.c_orderline_id
+INNER JOIN m_product p ON p.m_product_id=ol.m_product_id
+INNER JOIN c_salesregion sr ON sr.c_salesregion_id=io.c_salesregion_id
+WHERE io.docstatus IN ('CO', 'DR')
+--AND iol.isinvoiced='Y'
+AND io.movementdate BETWEEN $P{start_date} AND $P{end_date}
+--AND io.c_period_id=1000072 --Jan-20
+AND io.ad_org_id=$P{AD_Org_ID}
+GROUP BY io.c_salesregion_id, sr.name
+ORDER BY sr.name]]>
+	</queryString>
+	<field name="c_salesregion_id" class="java.math.BigDecimal"/>
+	<field name="rayon" class="java.lang.String"/>
+	<field name="sum_reward_disc" class="java.math.BigDecimal"/>
+	<field name="sum_add_disc" class="java.math.BigDecimal"/>
+	<field name="nama_cab" class="java.lang.String"/>
+	<variable name="sum_reward_disc_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{sum_reward_disc}]]></variableExpression>
+	</variable>
+	<variable name="sum_add_disc_1" class="java.math.BigDecimal" resetType="Column" calculation="Sum">
+		<variableExpression><![CDATA[$F{sum_add_disc}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="54" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="1" width="228" height="26" uuid="a281887e-05c8-4f7b-ac45-14673197353d"/>
+				<textElement verticalAlignment="Bottom">
+					<font size="13" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nama_cab}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="27" width="123" height="27" uuid="483295c1-2f53-4102-b372-072e2a6c295b"/>
+				<textElement verticalAlignment="Middle">
+					<font size="13" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Paket Discount :]]></text>
+			</staticText>
+			<textField pattern="MMMM yyyy">
+				<reportElement x="105" y="27" width="105" height="27" uuid="113c0baa-7fbc-4b76-b1ce-40eee42e7e9b"/>
+				<textElement verticalAlignment="Middle">
+					<font size="13" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{start_date}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="21" splitType="Stretch">
+			<staticText>
+				<reportElement x="32" y="1" width="105" height="20" uuid="8850804c-bd8b-4717-85cf-de7772f19058"/>
+				<box rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[RAYON]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="137" y="1" width="146" height="20" uuid="07744b12-85b5-474e-97da-3fedcb4b5569"/>
+				<box rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[DISC KE 2]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="283" y="1" width="146" height="20" uuid="5a4b8fac-a4db-4a5c-85a2-4063d2de1bc1"/>
+				<box rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[DISC KE 3]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="1" width="32" height="20" uuid="8d9dbb68-78dd-4313-b0da-dfee76e4d29c"/>
+				<box rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[NO]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="32" y="0" width="105" height="20" uuid="994d1dd5-a0d0-4d41-9004-5c869841ff6d"/>
+				<box rightPadding="0">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{rayon}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="137" y="0" width="146" height="20" uuid="ebc760cd-f30d-4b6c-8777-272b096e4032"/>
+				<box rightPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{sum_reward_disc} != 0 ? $F{sum_reward_disc} : ""]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00" isBlankWhenNull="true">
+				<reportElement x="283" y="0" width="146" height="20" uuid="b187c741-81d7-4727-bc17-4b2a02e0e3cb"/>
+				<box rightPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{sum_add_disc} != 0 ? $F{sum_add_disc} : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="0" width="32" height="20" uuid="a17b202c-08c4-48ef-89b6-e3628e4d7091"/>
+				<box rightPadding="5">
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_COUNT}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="20" splitType="Stretch">
+			<textField pattern="#,##0.00">
+				<reportElement x="137" y="0" width="146" height="20" uuid="0950fa7b-ecac-4e11-ae3f-aa9ee85fe9ef"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0" lineStyle="Double"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="1.0" lineStyle="Double"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{sum_reward_disc_1}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="283" y="0" width="146" height="20" uuid="897bfaf1-39fb-4332-afdd-442d541376bf"/>
+				<box rightPadding="5">
+					<topPen lineWidth="1.0" lineStyle="Double"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="1.0" lineStyle="Double"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{sum_add_disc_1}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="0" width="137" height="20" uuid="2f0c1609-f9bf-49ee-84ee-87866d187f32"/>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Double"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="1.0" lineStyle="Double"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[TOTAL]]></text>
+			</staticText>
+		</band>
+	</columnFooter>
+	<pageFooter>
+		<band height="24" splitType="Stretch"/>
+	</pageFooter>
+</jasperReport>
